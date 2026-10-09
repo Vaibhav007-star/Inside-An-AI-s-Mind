@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inside an AI's Mind: When Knowledge Becomes a Graph</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="neural-bg">
+    <!-- 3D Studio Ambient Props (Inspired by reference ceramic aesthetics) -->
+    <div class="ambient-prop ambient-sun-orb" aria-hidden="true"></div>
+    <div class="ambient-prop ambient-torus" aria-hidden="true">
+      <div class="torus-surface">
+        <div class="torus-hole"></div>
+      </div>
+    </div>
+    <div class="ambient-prop ambient-pebble" aria-hidden="true"></div>
+    <div class="ambient-prop ambient-emerald-pill" aria-hidden="true"></div>
+    <div class="ambient-prop ambient-amber-stone" aria-hidden="true"></div>
+  </div>
+
+  <div id="app-container">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="brand-title">
+        <span class="brand-name">INSIDE AN AI’S MIND</span>
+        <span class="brand-tagline">When Knowledge Becomes a Graph</span>
+        <span class="brand-badge">CIA III-B</span>
+      </div>
+
+      <div class="top-controls">
+        <!-- Six Main Modes -->
+        <nav class="mode-nav" id="mode-nav">
+          <button class="mode-btn active" data-mode="normal" id="btn-mode-normal">
+            <span>NORMAL</span><span class="btn-key">1</span>
+          </button>
+          <button class="mode-btn" data-mode="path" id="btn-mode-path">
+            <span>PATH</span><span class="btn-key">2</span>
+          </button>
+          <button class="mode-btn" data-mode="cycle" id="btn-mode-cycle">
+            <span>CYCLE</span><span class="btn-key">3</span>
+          </button>
+          <button class="mode-btn" data-mode="subgraph" id="btn-mode-subgraph">
+            <span>SUBGRAPH</span><span class="btn-key">4</span>
+          </button>
+          <button class="mode-btn" data-mode="degree" id="btn-mode-degree">
+            <span>DEGREE</span><span class="btn-key">5</span>
+          </button>
+          <button class="mode-btn" data-mode="component" id="btn-mode-component">
+            <span>COMPONENT</span><span class="btn-key">6</span>
+          </button>
+          <button class="mode-btn lab-mode-btn" data-mode="lab" id="btn-mode-lab" title="AI Mind Lab — Interactive Graph Theory Experience (L)">
+            <span class="lab-pill-icon">⚗</span><span>AI MIND LAB</span><span class="btn-key">L</span>
+          </button>
+        </nav>
+
+        <!-- Phase 3 Top Bar Buttons & Controls -->
+        <div class="extra-nav" id="extra-nav">
+          <button class="mode-btn active" id="btn-toggle-motion" title="Toggle Organic Synaptic Motion (M)">
+            <span id="motion-btn-icon">∿</span><span>MOTION</span><span class="btn-key">M</span>
+          </button>
+          <button class="mode-btn examiner-mode-btn" id="btn-toggle-examiner" title="Examiner Quick Demo Mode (E)">
+            <span>EXAMINER</span><span class="btn-key">E</span>
+          </button>
+          <button class="mode-btn" id="btn-drawer-theory" title="Graph Theory Concept Cards (T)">
+            <span>THEORY</span><span class="btn-key">T</span>
+          </button>
+          <button class="mode-btn" id="btn-drawer-analysis" title="Analysis & Observations (A)">
+            <span>ANALYSIS</span><span class="btn-key">A</span>
+          </button>
+          <button class="mode-btn" id="btn-drawer-diary" title="Diary of an AI Mind (D)">
+            <span>DIARY</span><span class="btn-key">D</span>
+          </button>
+          <button class="mode-btn" id="btn-toggle-present" style="border: 1px solid rgba(255, 209, 102, 0.4); color: #92400E;" title="Oral Presentation Mode (P)">
+            <span>PRESENT</span><span class="btn-key">P</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Sub-Mode Controls & Captions -->
+    <div class="sub-bar" id="sub-bar">
+      <div class="sub-left" id="sub-controls-left"></div>
+      <div class="sub-right" id="sub-controls-right"></div>
+    </div>
+
+    <!-- Main Stage -->
+    <main class="stage" id="stage">
+      <div class="stage-pedestal-shadow" aria-hidden="true"></div>
+      <svg id="graph-svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <!-- 3D Contact Shadow Blur Filter for Spherical Nodes -->
+          <filter id="node-contact-blur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3.2" />
+          </filter>
+
+          <!-- 3D Spherical Radial Gradients for All Domains -->
+          <radialGradient id="sphere-core" cx="32%" cy="28%" r="72%" fx="26%" fy="22%">
+            <stop offset="0%" stop-color="#FFFBEB" />
+            <stop offset="18%" stop-color="#FEF3C7" />
+            <stop offset="46%" stop-color="#F59E0B" />
+            <stop offset="76%" stop-color="#D97706" />
+            <stop offset="94%" stop-color="#92400E" />
+            <stop offset="100%" stop-color="#78350F" />
+          </radialGradient>
+
+          <radialGradient id="sphere-learning" cx="32%" cy="28%" r="72%" fx="26%" fy="22%">
+            <stop offset="0%" stop-color="#F0F9FF" />
+            <stop offset="18%" stop-color="#BAE6FD" />
+            <stop offset="48%" stop-color="#0284C7" />
+            <stop offset="78%" stop-color="#0369A1" />
+            <stop offset="94%" stop-color="#075985" />
+            <stop offset="100%" stop-color="#0C4A6E" />
+          </radialGradient>
+
+          <radialGradient id="sphere-vision" cx="32%" cy="28%" r="72%" fx="26%" fy="22%">
+            <stop offset="0%" stop-color="#FFF1F2" />
+            <stop offset="18%" stop-color="#FECDD3" />
+            <stop offset="48%" stop-color="#E11D48" />
+            <stop offset="78%" stop-color="#BE123C" />
+            <stop offset="94%" stop-color="#9F1239" />
+            <stop offset="100%" stop-color="#881337" />
+          </radialGradient>
+
+          <radialGradient id="sphere-nlp" cx="32%" cy="28%" r="72%" fx="26%" fy="22%">
+            <stop offset="0%" stop-color="#F0FDF4" />
+            <stop offset="18%" stop-color="#A7F3D0" />
+            <stop offset="48%" stop-color="#059669" />
+            <stop offset="78%" stop-color="#047857" />
+            <stop offset="94%" stop-color="#064E3B" />
+            <stop offset="100%" stop-color="#022C22" />
+          </radialGradient>
+
+          <radialGradient id="sphere-reasoning" cx="32%" cy="28%" r="72%" fx="26%" fy="22%">
+            <stop offset="0%" stop-color="#FFF7ED" />
+            <stop offset="18%" stop-color="#FED7AA" />
+            <stop offset="48%" stop-color="#EA580C" />
+            <stop offset="78%" stop-color="#C2410C" />
+            <stop offset="94%" stop-color="#9A3412" />
+            <stop offset="100%" stop-color="#7C2D12" />
+          </radialGradient>
+
+          <radialGradient id="sphere-special" cx="32%" cy="28%" r="72%" fx="26%" fy="22%">
+            <stop offset="0%" stop-color="#FAF5FF" />
+            <stop offset="18%" stop-color="#DDD6FE" />
+            <stop offset="48%" stop-color="#7C3AED" />
+            <stop offset="78%" stop-color="#6D28D9" />
+            <stop offset="94%" stop-color="#5B21B6" />
+            <stop offset="100%" stop-color="#4C1D95" />
+          </radialGradient>
+
+          <!-- 3D Specular Sheen Gradient -->
+          <linearGradient id="sphere-gloss-sheen" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.85" />
+            <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.30" />
+            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0" />
+          </linearGradient>
+
+          <!-- 3D Ambient Bounce Light Gradient -->
+          <linearGradient id="sphere-bounce-light" x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.38" />
+            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0" />
+          </linearGradient>
+
+          <!-- Soft Tactile Studio Drop Shadows for Nodes -->
+          <filter id="glow-gold" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="rgba(217, 119, 6, 0.45)" />
+            <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(217, 119, 6, 0.3)" />
+          </filter>
+
+          <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(2, 132, 199, 0.35)" />
+            <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(2, 132, 199, 0.25)" />
+          </filter>
+
+          <filter id="glow-pink" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(225, 29, 72, 0.35)" />
+            <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(225, 29, 72, 0.25)" />
+          </filter>
+
+          <filter id="glow-green" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(5, 150, 105, 0.35)" />
+            <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(5, 150, 105, 0.25)" />
+          </filter>
+
+          <filter id="glow-orange" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(234, 88, 12, 0.35)" />
+            <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(234, 88, 12, 0.25)" />
+          </filter>
+
+          <filter id="glow-violet" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(124, 58, 237, 0.35)" />
+            <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(124, 58, 237, 0.25)" />
+          </filter>
+        </defs>
+
+        <!-- Layer 0: Background decorations & Component frames -->
+        <g id="layer-frames"></g>
+
+        <!-- Layer 1: Edges -->
+        <g id="layer-edges"></g>
+
+        <!-- Layer 2: Subgraph halos & overlays -->
+        <g id="layer-subgraphs"></g>
+
+        <!-- Layer 3: Nodes -->
+        <g id="layer-nodes"></g>
+
+        <!-- Layer 4: Overlays & Order numbers -->
+        <g id="layer-overlays"></g>
+
+        <!-- Scanner Laser Beam Overlay Line -->
+        <line id="scanner-laser-line" x1="-800" y1="0" x2="2400" y2="0" style="display: none; stroke: #059669; stroke-width: 4; filter: drop-shadow(0 0 10px #34D399); opacity: 0.85; pointer-events: none;" />
+      </svg>
+
+      <!-- Tooltip -->
+      <div id="graph-tooltip"></div>
+
+      <!-- Ranked Degree Card (DEGREE Mode) -->
+      <div class="ranked-degree-card" id="ranked-panel" style="display: none;">
+        <div class="panel-header">
+          <div class="panel-title-area">
+            <span class="panel-title" style="font-size: 14px;">Ranked by Degree</span>
+            <span class="panel-type-tag">All 28 Vertices</span>
+          </div>
+        </div>
+        <div class="ranked-degree-list" id="ranked-degree-list"></div>
+      </div>
+
+      <!-- AI MIND LAB INTERACTIVE EXPERIENCE HUD -->
+      <aside class="lab-hud" id="lab-hud">
+        <div class="lab-hud-header">
+          <div class="lab-header-left">
+            <div class="lab-badge-row">
+              <span class="lab-tag">INTERACTIVE EXPERIENCE</span>
+              <span class="lab-score-badge" id="lab-score-badge">AI MIND SCORE: 0/4</span>
+            </div>
+            <h2 class="lab-title">AI MIND LAB</h2>
+            <p class="lab-subtitle">“Can you understand the AI by understanding its graph?”</p>
+          </div>
+          <div class="lab-header-actions">
+            <button class="lab-toggle-btn" id="lab-collapse-btn" title="Minimize / Expand Lab (Ctrl+B)">◀</button>
+            <button class="lab-close-btn" id="lab-close-btn" title="Close Lab (Esc)">&times;</button>
+          </div>
+        </div>
+
+        <!-- Master Banner: shown when all 4 missions are completed -->
+        <div class="lab-master-banner" id="lab-master-banner" style="display: none;">
+          <div class="master-badge-glow">★</div>
+          <div class="master-info">
+            <strong class="master-title">GRAPH THEORY MASTER</strong>
+            <span class="master-desc">All 4 missions completed! “The AI Mind Speaks” unlocked below.</span>
+          </div>
+        </div>
+
+        <!-- Lab Navigation Tabs -->
+        <div class="lab-tabs" id="lab-tabs">
+          <button class="lab-tab-btn active" data-tab="m1">M1: Path</button>
+          <button class="lab-tab-btn" data-tab="m2">M2: Hub</button>
+          <button class="lab-tab-btn" data-tab="m3">M3: Loop</button>
+          <button class="lab-tab-btn" data-tab="m4">M4: Subgraph</button>
+          <button class="lab-tab-btn" data-tab="glitch">Glitch</button>
+          <button class="lab-tab-btn" data-tab="scanner">Scanner</button>
+          <button class="lab-tab-btn" data-tab="diary">AI Speaks</button>
+          <button class="lab-tab-btn" data-tab="examiner">Examiner</button>
+        </div>
+
+        <!-- Dynamic Lab Content Container -->
+        <div class="lab-body" id="lab-body"></div>
+      </aside>
+
+      <!-- Minimized Lab Expand Pill -->
+      <button class="lab-expand-pill" id="lab-expand-pill" title="Expand AI Mind Lab">
+        <span>⚗ LAB</span>
+        <span class="pill-score" id="pill-score">0/4</span>
+        <span style="font-size: 10px;">▶</span>
+      </button>
+
+      <!-- Slide-in Right Info Panel -->
+      <aside class="info-panel" id="info-panel">
+        <div class="panel-header">
+          <div class="panel-title-area">
+            <span class="panel-type-tag" id="panel-type-tag">VERTEX</span>
+            <span class="panel-title" id="panel-title">Node Name</span>
+          </div>
+          <button class="panel-close-btn" id="panel-close-btn" title="Close (Esc)">&times;</button>
+        </div>
+
+        <div class="panel-section" id="panel-domain-section">
+          <span class="panel-label">Domain</span>
+          <div class="panel-value" id="panel-domain-val">-</div>
+        </div>
+
+        <div class="panel-section" id="panel-meaning-section">
+          <span class="panel-label">Concept Meaning</span>
+          <div class="panel-value" id="panel-meaning-val">-</div>
+        </div>
+
+        <div class="panel-section" id="panel-degree-section">
+          <span class="panel-label">Vertex Degree</span>
+          <div class="degree-highlight-box">
+            <span style="font-size: 13px; font-weight: 600;">Incident Edges</span>
+            <span class="degree-big-num" id="panel-degree-num">0</span>
+          </div>
+        </div>
+
+        <div class="panel-section" id="panel-neighbors-section">
+          <span class="panel-label">Connected Concepts (Neighbors)</span>
+          <div class="panel-chip-list" id="panel-neighbors-list"></div>
+        </div>
+
+        <div class="panel-section" id="panel-math-section">
+          <span class="panel-label">Graph Theory Insight</span>
+          <div class="math-insight-box" id="panel-math-val">-</div>
+        </div>
+      </aside>
+
+      <!-- DRAWER 1: Theory Drawer -->
+      <aside class="slide-drawer" id="drawer-theory">
+        <div class="drawer-header">
+          <div class="drawer-title">
+            <span>● GRAPH THEORY INSIDE THE AI MIND</span>
+          </div>
+          <button class="drawer-close" data-close-drawer="theory">&times;</button>
+        </div>
+        <div class="drawer-body" id="theory-drawer-body"></div>
+      </aside>
+
+      <!-- DRAWER 2: Analysis Drawer -->
+      <aside class="slide-drawer" id="drawer-analysis">
+        <div class="drawer-header">
+          <div class="drawer-title">
+            <span>◆ ANALYZING THE AI MIND</span>
+          </div>
+          <button class="drawer-close" data-close-drawer="analysis">&times;</button>
+        </div>
+        <div class="drawer-body" id="analysis-drawer-body"></div>
+      </aside>
+
+      <!-- DRAWER 3: Diary Drawer -->
+      <aside class="slide-drawer" id="drawer-diary">
+        <div class="drawer-header">
+          <div class="drawer-title">
+            <span>↝ DIARY OF AN AI MIND</span>
+          </div>
+          <button class="drawer-close" data-close-drawer="diary">&times;</button>
+        </div>
+        <div class="drawer-body" id="diary-drawer-body"></div>
+      </aside>
+
+      <!-- Bottom Legend -->
+      <div class="bottom-legend">
+        <div class="legend-item"><span class="symbol">●</span> VERTEX</div>
+        <div class="legend-item"><span class="symbol">━</span> EDGE</div>
+        <div class="legend-item"><span class="symbol">↝</span> PATH</div>
+        <div class="legend-item"><span class="symbol">⟳</span> CYCLE</div>
+        <div class="legend-item"><span class="symbol">◆</span> SUBGRAPH</div>
+        <div class="legend-item"><span class="symbol">●</span> COMPONENT</div>
+        <div class="legend-item"><span class="symbol">#</span> DEGREE</div>
+      </div>
+
+      <!-- Presentation Bottom Strip -->
+      <div class="presentation-strip" id="presentation-strip">
+        <div class="pres-left">
+          <span class="pres-speaker-badge speaker-a" id="pres-speaker-badge">SPEAKER A</span>
+          <div class="pres-timer-box">
+            <span class="pres-slide-num" id="pres-slide-num">Slide 1 / 11</span>
+            <span class="pres-time-label" id="pres-time-label">0:30 (Total 09:00)</span>
+          </div>
+        </div>
+
+        <div class="pres-center">
+          <div class="pres-slide-title" id="pres-slide-title">Slide Title</div>
+          <div class="pres-bullets" id="pres-bullets">
+            <span class="pres-bullet-item">Bullet 1</span>
+          </div>
+        </div>
+
+        <div class="pres-right">
+          <button class="pres-nav-btn" id="pres-prev-btn">◀ Prev</button>
+          <button class="pres-nav-btn" id="pres-next-btn">Next ▶</button>
+          <button class="pres-exit-btn" id="pres-exit-btn">Exit (Esc)</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Mandatory Footer Line -->
+    <footer class="mandatory-footer">
+      A conceptual graph model used to demonstrate how Graph Theory can represent relationships between knowledge concepts. It is not how a real AI stores knowledge internally.
+    </footer>
+  </div>
+
+  <script src="graph-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
