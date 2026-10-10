@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inside an AI's Mind: When Knowledge Becomes a Graph</title>
   <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.js",
+      "three/addons/": "./vendor/"
+    }
+  }
+  </script>
 </head>
 <body>
   <div class="neural-bg">
@@ -30,6 +38,14 @@
       </div>
 
       <div class="top-controls">
+        <!-- Apple-style Quick Concept Search -->
+        <div class="search-pill" id="search-pill">
+          <span class="search-pill-icon">⌕</span>
+          <input type="text" id="node-search-input" placeholder="Search concept (e.g. neural_net)..." autocomplete="off" spellcheck="false">
+          <span class="search-pill-shortcut">/</span>
+          <div class="search-dropdown" id="search-dropdown"></div>
+        </div>
+
         <!-- Six Main Modes -->
         <nav class="mode-nav" id="mode-nav">
           <button class="mode-btn active" data-mode="normal" id="btn-mode-normal">
@@ -88,6 +104,22 @@
     <!-- Main Stage -->
     <main class="stage" id="stage">
       <div class="stage-pedestal-shadow" aria-hidden="true"></div>
+
+      <!-- Three.js 3D Interactive Viewport -->
+      <div id="three-viewport" class="three-viewport"></div>
+
+      <!-- Apple-style Floating 3D Camera Dock -->
+      <div class="camera-dock" id="camera-dock">
+        <button class="camera-dock-btn" id="btn-reset-cam" title="Reset Camera View Angle and Distance">
+          <span class="camera-dock-icon">↺</span>
+          <span>Reset View</span>
+        </button>
+        <button class="camera-dock-btn" id="btn-focus-ai" title="Center on AI Knowledge Hub">
+          <span class="camera-dock-icon">🎯</span>
+          <span>Focus AI</span>
+        </button>
+      </div>
+
       <svg id="graph-svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid meet">
         <defs>
           <!-- 3D Contact Shadow Blur Filter for Spherical Nodes -->
@@ -392,6 +424,6 @@
   </div>
 
   <script src="graph-data.js"></script>
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

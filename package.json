@@ -1,0 +1,11 @@
+{
+  "name": "inside-an-ais-mind",
+  "version": "2.0.0",
+  "scripts": {
+    "test": "node verify.mjs",
+    "serve": "python -m http.server 5500"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  }
+}

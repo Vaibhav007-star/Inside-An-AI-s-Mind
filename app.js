@@ -1,11 +1,15 @@
 /**
  * Visual Graph Engine and Mode Controller
  * "Inside an AI's Mind: When Knowledge Becomes a Graph"
- * Pure JS, SVG rendering, Zero External Dependencies.
+ * Pure JS, Three.js 3D Engine + SVG Fallback, Zero External CDN Dependencies.
  */
+
+import { ThreeGraphEngine } from "./three-scene.js";
 
 (function () {
   "use strict";
+
+  let threeEngine = null;
 
   // Fixed deterministic node layout in 1600x1000 coordinate space
   const NODE_POSITIONS = {
@@ -340,12 +344,23 @@
 
     renderRightPanel();
     highlightGraphElements();
+
+    if (threeEngine) {
+      threeEngine.highlightElement(type, id);
+      if (type === "vertex") {
+        threeEngine.focusNode(id, 800);
+      }
+    }
   }
 
   function clearSelection() {
     STATE.selectedElement = null;
     infoPanel.classList.remove("visible");
     highlightGraphElements();
+
+    if (threeEngine) {
+      threeEngine.clearHighlight();
+    }
   }
 
   function handleVertexClick(vId) {
@@ -605,6 +620,95 @@
     }
 
     highlightGraphElements();
+    syncThreeEngineVisuals();
+  }
+
+  function syncThreeEngineVisuals() {
+    if (!threeEngine) return;
+
+    switch (STATE.mode) {
+      case "normal":
+        threeEngine.setModeVisuals("normal");
+        break;
+
+      case "path": {
+        let pathVertices = null;
+        if (STATE.pathCustomPair.length === 2) {
+          pathVertices = GRAPH.shortestPath(STATE.pathCustomPair[0], STATE.pathCustomPair[1], STATE.removedVertices);
+        } else if (GRAPH.featured.paths[STATE.selectedPathId]) {
+          pathVertices = GRAPH.featured.paths[STATE.selectedPathId].vertices;
+        }
+        let pathEdges = [];
+        if (pathVertices) {
+          for (let i = 0; i < pathVertices.length - 1; i++) {
+            const u = pathVertices[i];
+            const v = pathVertices[i + 1];
+            const edge = GRAPH.edges.find((e) => (e.a === u && e.b === v) || (e.a === v && e.b === u));
+            if (edge) pathEdges.push(edge.id);
+          }
+        }
+        threeEngine.setModeVisuals("path", { pathVertices, pathEdges });
+        break;
+      }
+
+      case "cycle": {
+        let cycleVertices = null;
+        let cycleEdges = [];
+        if (GRAPH.featured.cycles[STATE.selectedCycleId]) {
+          cycleVertices = GRAPH.featured.cycles[STATE.selectedCycleId].vertices;
+          for (let i = 0; i < cycleVertices.length - 1; i++) {
+            const u = cycleVertices[i];
+            const v = cycleVertices[i + 1];
+            const edge = GRAPH.edges.find((e) => (e.a === u && e.b === v) || (e.a === v && e.b === u));
+            if (edge) cycleEdges.push(edge.id);
+          }
+        }
+        threeEngine.setModeVisuals("cycle", { cycleVertices, cycleEdges });
+        break;
+      }
+
+      case "subgraph": {
+        const allSubNodes = new Set();
+        const allSubEdges = new Set();
+        STATE.selectedSubgraphs.forEach((subId) => {
+          const sub = GRAPH.featured.subgraphs[subId];
+          if (sub) {
+            sub.vertices.forEach((v) => allSubNodes.add(v));
+            sub.edges.forEach((e) => allSubEdges.add(e));
+          }
+        });
+        threeEngine.setModeVisuals("subgraph", {
+          subgraphNodes: Array.from(allSubNodes),
+          subgraphEdges: Array.from(allSubEdges)
+        });
+        break;
+      }
+
+      case "degree":
+        threeEngine.setModeVisuals("degree");
+        break;
+
+      case "component": {
+        const comps = GRAPH.components(STATE.removedVertices, STATE.removedEdges);
+        threeEngine.setModeVisuals("component", {
+          removedVertices: STATE.removedVertices,
+          removedEdges: STATE.removedEdges,
+          components: comps
+        });
+        break;
+      }
+
+      case "lab":
+        threeEngine.setModeVisuals("lab", {
+          tab: LAB_STATE.activeTab,
+          m1: LAB_STATE.m1,
+          m2: LAB_STATE.m2,
+          m3: LAB_STATE.m3,
+          m4: LAB_STATE.m4,
+          glitch: LAB_STATE.glitch
+        });
+        break;
+    }
   }
 
   // ---------------- MODE 1: NORMAL ----------------
@@ -1314,6 +1418,17 @@
         }
         break;
       }
+    }
+
+    if (threeEngine && STATE.mode === "lab") {
+      threeEngine.setModeVisuals("lab", {
+        tab: LAB_STATE.activeTab,
+        m1: LAB_STATE.m1,
+        m2: LAB_STATE.m2,
+        m3: LAB_STATE.m3,
+        m4: LAB_STATE.m4,
+        glitch: LAB_STATE.glitch
+      });
     }
   }
 
@@ -2028,18 +2143,28 @@
     LAB_STATE.glitch.active = true;
     renderLabHUD();
     applyLabGraphVisuals();
+    if (threeEngine) {
+      threeEngine.triggerGlitch3D(true, "E18");
+    }
   }
 
   function restoreGlitch() {
     LAB_STATE.glitch.active = false;
     renderLabHUD();
     applyLabGraphVisuals();
+    if (threeEngine) {
+      threeEngine.triggerGlitch3D(false, "E18");
+    }
   }
 
   function runGraphScanner() {
     if (LAB_STATE.scanner.isScanning) return;
     LAB_STATE.scanner.isScanning = true;
     renderLabHUD();
+
+    if (threeEngine) {
+      threeEngine.triggerScanner3D();
+    }
 
     const laser = document.getElementById("scanner-laser-line");
     if (laser) {
@@ -2281,6 +2406,49 @@
         });
         captionText = `<strong>• Connected Components:</strong> c(G) = 2. Component K1 (Main AI Mind) has 25 vertices; Component K2 (Specialized Chess Cluster) has 3 vertices with zero paths between them.`;
         break;
+      }
+    }
+
+    if (threeEngine) {
+      switch (demoKey) {
+        case "degree":
+          threeEngine.setModeVisuals("degree");
+          break;
+        case "path": {
+          const p1 = ["data", "features", "patterns", "prediction"];
+          const edges = [];
+          for (let i = 0; i < p1.length - 1; i++) {
+            const e = GRAPH.edges.find((x) => (x.a === p1[i] && x.b === p1[i + 1]) || (x.a === p1[i + 1] && x.b === p1[i]));
+            if (e) edges.push(e.id);
+          }
+          threeEngine.setModeVisuals("path", { pathVertices: p1, pathEdges: edges });
+          break;
+        }
+        case "cycle": {
+          const c1 = ["data", "training", "model", "prediction", "feedback", "data"];
+          const edges = [];
+          for (let i = 0; i < c1.length - 1; i++) {
+            const e = GRAPH.edges.find((x) => (x.a === c1[i] && x.b === c1[i + 1]) || (x.a === c1[i + 1] && x.b === c1[i]));
+            if (e) edges.push(e.id);
+          }
+          threeEngine.setModeVisuals("cycle", { cycleVertices: c1, cycleEdges: edges });
+          break;
+        }
+        case "connectivity": {
+          const comps = GRAPH.components(["data"], []);
+          threeEngine.setModeVisuals("component", { removedVertices: ["data"], removedEdges: [], components: comps });
+          break;
+        }
+        case "subgraph": {
+          const s2 = GRAPH.featured.subgraphs["S2"];
+          threeEngine.setModeVisuals("subgraph", { subgraphNodes: s2.vertices, subgraphEdges: s2.edges });
+          break;
+        }
+        case "component": {
+          const comps = GRAPH.components([], []);
+          threeEngine.setModeVisuals("component", { removedVertices: [], removedEdges: [], components: comps });
+          break;
+        }
       }
     }
 
@@ -3658,13 +3826,122 @@
     document.getElementById("pres-next-btn").addEventListener("click", nextSlide);
     document.getElementById("pres-exit-btn").addEventListener("click", exitPresentationMode);
 
-    // Global keyboard shortcuts for Phase 3 & Motion
+    // Apple-style Quick Concept Search
+    const searchInput = document.getElementById("node-search-input");
+    const searchDropdown = document.getElementById("search-dropdown");
+
+    if (searchInput && searchDropdown) {
+      function renderSearchDropdown(query) {
+        const q = (query || "").trim().toLowerCase();
+        if (!q) {
+          searchDropdown.style.display = "none";
+          searchDropdown.innerHTML = "";
+          return;
+        }
+
+        const matches = GRAPH.vertices.filter((v) =>
+          v.label.toLowerCase().includes(q) ||
+          v.id.toLowerCase().includes(q) ||
+          v.domain.toLowerCase().includes(q)
+        ).slice(0, 7);
+
+        if (matches.length === 0) {
+          searchDropdown.innerHTML = `<div class="search-item" style="cursor:default; color:var(--text-muted);">No concepts found for "${query}"</div>`;
+          searchDropdown.style.display = "flex";
+          return;
+        }
+
+        searchDropdown.innerHTML = matches.map((v) => {
+          const dom = GRAPH.domains[v.domain];
+          return `
+            <div class="search-item" data-vid="${v.id}">
+              <div>
+                <strong>${v.label}</strong>
+                <span style="font-size:10.5px; opacity:0.6; margin-left:6px;">(${v.id})</span>
+              </div>
+              <span class="search-item-badge" style="background:${dom.bg}; color:${dom.color}; border:1px solid ${dom.border};">${dom.label}</span>
+            </div>
+          `;
+        }).join("");
+
+        searchDropdown.style.display = "flex";
+      }
+
+      searchInput.addEventListener("input", (e) => {
+        renderSearchDropdown(e.target.value);
+      });
+
+      searchInput.addEventListener("focus", (e) => {
+        if (e.target.value) renderSearchDropdown(e.target.value);
+      });
+
+      searchDropdown.addEventListener("click", (e) => {
+        const item = e.target.closest(".search-item");
+        if (!item) return;
+        const vid = item.getAttribute("data-vid");
+        if (vid) {
+          handleVertexClick(vid);
+          if (threeEngine) threeEngine.focusNode(vid, 900);
+          searchDropdown.style.display = "none";
+          searchInput.value = "";
+          searchInput.blur();
+        }
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest("#search-pill")) {
+          searchDropdown.style.display = "none";
+        }
+      });
+
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          const firstItem = searchDropdown.querySelector(".search-item[data-vid]");
+          if (firstItem) {
+            const vid = firstItem.getAttribute("data-vid");
+            handleVertexClick(vid);
+            if (threeEngine) threeEngine.focusNode(vid, 900);
+            searchDropdown.style.display = "none";
+            searchInput.value = "";
+            searchInput.blur();
+          }
+        } else if (e.key === "Escape") {
+          searchDropdown.style.display = "none";
+          searchInput.blur();
+        }
+      });
+    }
+
+    // Floating 3D Camera Dock Controls
+    const btnResetCam = document.getElementById("btn-reset-cam");
+    if (btnResetCam) {
+      btnResetCam.addEventListener("click", () => {
+        if (threeEngine) threeEngine.resetCamera(1000);
+      });
+    }
+
+    const btnFocusAi = document.getElementById("btn-focus-ai");
+    if (btnFocusAi) {
+      btnFocusAi.addEventListener("click", () => {
+        handleVertexClick("ai");
+        if (threeEngine) threeEngine.focusNode("ai", 1000);
+      });
+    }
+
+    // Global keyboard shortcuts for Phase 3 & Motion & Search
     window.addEventListener("keydown", (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
 
       if (e.key === "Escape") {
         if (activeDrawer) closeDrawers();
         if (presActive) exitPresentationMode();
+      } else if (e.key === "/") {
+        e.preventDefault();
+        const input = document.getElementById("node-search-input");
+        if (input) {
+          input.focus();
+          input.select();
+        }
       } else if (e.key.toLowerCase() === "m") {
         toggleMotion();
       } else if (e.key.toLowerCase() === "t") {
@@ -3801,7 +4078,10 @@
     enterPresentation: enterPresentationMode,
     exitPresentation: exitPresentationMode,
     toggleMotion: toggleMotion,
-    isMotionActive: () => isMotionActive
+    isMotionActive: () => isMotionActive,
+    get3DEngine: () => threeEngine,
+    resetCamera: () => { if (threeEngine) threeEngine.resetCamera(); },
+    focusNode: (id) => { if (threeEngine) threeEngine.focusNode(id); }
   };
 
   // Hash routing for direct navigation and screenshot captures
@@ -3838,8 +4118,31 @@
   }
   window.addEventListener("hashchange", handleHashState);
 
+  // Initialize Three.js 3D Knowledge Graph Universe
+  function initThreeEngine() {
+    const container = document.getElementById("three-viewport");
+    if (!container) return;
+
+    try {
+      threeEngine = new ThreeGraphEngine(container, {
+        onNodeClick: (nodeId) => {
+          handleVertexClick(nodeId);
+        },
+        onEdgeClick: (edgeId) => {
+          selectElement("edge", edgeId);
+        },
+        onBackgroundClick: () => {
+          clearSelection();
+        }
+      });
+    } catch (err) {
+      console.warn("ThreeGraphEngine 3D WebGL initialization error:", err);
+    }
+  }
+
   // Initialize
   initGraphDOM();
+  initThreeEngine();
   setupModeNav();
   setupPhase3Listeners();
   applyMode();

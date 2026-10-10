@@ -54,33 +54,29 @@ Every value and visualization in the project is strictly derived from the underl
 - **🎙 Examiner Mode:** One-click quick demonstration buttons for oral presentation defense.
 - **📖 The AI Mind Speaks:** Creative integration connecting Graph Diary reflections with real-time graph highlights.
 
-### 3. Visual Experience & Ergonomics
-- **Organic Synaptic Motion:** Toggleable mathematical node floating driven by `requestAnimationFrame`.
-- **Dynamic Camera ViewBox:** Automatically offsets and centers the graph canvas when the Lab HUD is open to eliminate node occlusion.
-- **Zero External Dependencies:** Built with pure vanilla HTML5, CSS3, SVG, and JavaScript. 100% offline execution.
+### 3. Visual Experience & 3D Ergonomics
+- **Three.js 3D Knowledge Graph Universe:** High-fidelity interactive 3D WebGL viewport with PBR physical ceramic nodes, metallic sheen, organic clustering, and dynamic synaptic links.
+- **Apple-inspired UI Craft:** Subtle glass badges, floating acrylic controls, silky camera flight transitions, and tactile hover responses.
+- **Camera Dock & OrbitControls:** Smooth pan, tilt, zoom, and dedicated one-click `Reset View` and `Focus AI Hub` controls.
+- **Quick Concept Search (`/`):** Instant search bar with auto-complete dropdown and animated camera flight to targeted knowledge nodes.
+- **Zero CDN Dependencies:** All Three.js ES modules (`three.module.js`, `OrbitControls.js`, `CSS2DRenderer.js`) are vendored locally in `vendor/` for 100% offline reliability.
 
 ---
 
 ## 🚀 Getting Started
 
-### Option 1: Direct File Open
-Double-click `index.html` in Windows Explorer or open it in Google Chrome, Microsoft Edge, or Mozilla Firefox.
+### Local Server (Recommended for ES Modules)
+Because modern browsers enforce ES Module CORS policies on `file://`, use any local HTTP server:
 
-### Option 2: Python Local Server (Recommended)
 ```bash
-# Navigate to the project root
-cd "Inside an AI's Mind"
-
-# Start HTTP server
+# Python local server:
 python -m http.server 5500
+
+# Or Node.js serve:
+npx serve . -p 5500
 ```
 Open your browser at: **`http://127.0.0.1:5500/index.html`**  
 To go straight to the interactive lab: **`http://127.0.0.1:5500/index.html#lab`**
-
-### Option 3: Node.js Serve
-```bash
-npx serve . -p 5500
-```
 
 ---
 
@@ -97,17 +93,20 @@ node verify.mjs
 ## 📂 File Structure
 
 ```text
-├── index.html              # Main presentation stage, SVG viewport, and Lab HUD
-├── style.css               # Futuristic ceramic marble styling, responsive layouts, 3D animations
-├── app.js                  # State engine, BFS pathfinder, animation loops, Lab missions
-├── graph-data.js           # 28 vertices, 39 edges, adjacency list, and subgraph definitions
+├── index.html              # Main application stage, 3D viewport, search bar, and Lab HUD
+├── style.css               # Apple-inspired glass styling, 3D badges, responsive layout
+├── app.js                  # State engine, UI controller, Lab mission logic, search handler
+├── three-scene.js          # Three.js 3D visualization engine (WebGL, PBR, CSS2D labels, camera flight)
+├── graph-data.js           # Authoritative mathematical dataset (28 vertices, 39 edges, graph algorithms)
 ├── verify.mjs              # 31 automated academic verification assertions
-├── PROJECT_SPEC.md         # Full academic specification & rules
-└── screenshots/            # High-resolution presentation capture evidence
+├── vendor/                 # Vendored Three.js ES modules (zero CDN dependency)
+├── PROJECT_SPEC.md         # Full academic specification & requirements
+└── screenshots/            # High-resolution presentation captures
 ```
 
 ---
 
 ## 👥 Authors
-- **Vaibhav** — Academic Research, Graph Modeling, Creative Narrative & Interactive UI Architecture
+- **Vaibhav** — Academic Research, Graph Modeling, Creative Narrative & Interactive 3D UI Architecture
 - **CIA III-B Discrete Mathematics Project** — Department of Computer Science
+
