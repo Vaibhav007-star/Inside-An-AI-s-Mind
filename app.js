@@ -4124,7 +4124,9 @@ import { ThreeGraphEngine } from "./three-scene.js";
     if (!container) return;
 
     try {
+      const gData = (typeof GRAPH !== "undefined" ? GRAPH : null) || (typeof window !== "undefined" ? window.GRAPH : null);
       threeEngine = new ThreeGraphEngine(container, {
+        graphData: gData,
         onNodeClick: (nodeId) => {
           handleVertexClick(nodeId);
         },
@@ -4135,8 +4137,10 @@ import { ThreeGraphEngine } from "./three-scene.js";
           clearSelection();
         }
       });
+      if (svg) svg.style.display = "none";
     } catch (err) {
-      console.warn("ThreeGraphEngine 3D WebGL initialization error:", err);
+      console.warn("ThreeGraphEngine 3D WebGL initialization error, maintaining SVG fallback:", err);
+      if (svg) svg.style.display = "block";
     }
   }
 

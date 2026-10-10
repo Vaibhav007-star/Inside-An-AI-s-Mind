@@ -443,6 +443,13 @@ const GRAPH = {
   }
 };
 
+if (typeof window !== "undefined") {
+  window.GRAPH = GRAPH;
+}
+if (typeof globalThis !== "undefined") {
+  globalThis.GRAPH = GRAPH;
+}
+
 if (typeof module !== "undefined") {
   module.exports = GRAPH;
 }

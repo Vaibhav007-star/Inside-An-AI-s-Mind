@@ -7,9 +7,9 @@
  * camera flight tweening, and real-time Graph Theory mode shaders.
  */
 
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import * as THREE from './vendor/three.module.js';
+import { OrbitControls } from './vendor/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from './vendor/renderers/CSS2DRenderer.js';
 
 export class ThreeGraphEngine {
   constructor(containerOrOptions = {}, maybeOptions = {}) {
@@ -20,7 +20,10 @@ export class ThreeGraphEngine {
       options = containerOrOptions || {};
     }
     this.container = options.container || document.getElementById('three-viewport');
-    this.graphData = options.graphData || window.GRAPH;
+    this.graphData = options.graphData || 
+      (typeof window !== 'undefined' ? window.GRAPH : null) || 
+      (typeof globalThis !== 'undefined' ? globalThis.GRAPH : null) || 
+      (typeof GRAPH !== 'undefined' ? GRAPH : null);
 
     // Callbacks
     this.onNodeClickCallback = options.onNodeClick || (() => {});
@@ -107,9 +110,13 @@ export class ThreeGraphEngine {
 
   init() {
     if (!this.container) return;
+    if (!this.graphData || !this.graphData.vertices) {
+      console.warn("ThreeGraphEngine: graphData not available yet.");
+      return;
+    }
 
-    const width = this.container.clientWidth || window.innerWidth;
-    const height = this.container.clientHeight || window.innerHeight;
+    const width = Math.max(this.container.clientWidth || 0, window.innerWidth || 1200);
+    const height = Math.max(this.container.clientHeight || 0, window.innerHeight || 800);
 
     // 1. Three.js Scene
     this.scene = new THREE.Scene();
@@ -426,10 +433,115 @@ export class ThreeGraphEngine {
     });
   }
 
+  highlightElement(type, id) {
+    this.selectedElement = { type, id };
+    if (type === 'vertex') {
+      const neighbors = new Set(this.graphData.neighbors(id));
+      this.nodeMeshes.forEach((mesh, vId) => {
+        const isTarget = vId === id;
+        const isNeighbor = neighbors.has(vId);
+        if (isTarget) {
+          mesh.material.transparent = false;
+          mesh.material.opacity = 1.0;
+          mesh.material.emissiveIntensity = 0.85;
+          mesh.scale.setScalar(mesh.userData.baseRadius * 1.35);
+          const lbl = this.nodeLabels.get(vId);
+          if (lbl) {
+            lbl.element.classList.remove('dimmed');
+            lbl.element.classList.add('highlight-path');
+          }
+        } else if (isNeighbor) {
+          mesh.material.transparent = false;
+          mesh.material.opacity = 0.9;
+          mesh.material.emissiveIntensity = 0.45;
+          mesh.scale.setScalar(mesh.userData.baseRadius * 1.08);
+          const lbl = this.nodeLabels.get(vId);
+          if (lbl) lbl.element.classList.remove('dimmed');
+        } else {
+          mesh.material.transparent = true;
+          mesh.material.opacity = 0.25;
+          mesh.scale.setScalar(mesh.userData.baseRadius * 0.95);
+          const lbl = this.nodeLabels.get(vId);
+          if (lbl) lbl.element.classList.add('dimmed');
+        }
+      });
+
+      this.edgeObjects.forEach((line) => {
+        const e = line.userData.edgeData;
+        const isIncident = e.a === id || e.b === id;
+        if (isIncident) {
+          line.material.opacity = 1.0;
+          line.material.color.setHex(0x10B981);
+        } else {
+          line.material.opacity = 0.12;
+        }
+      });
+    } else if (type === 'edge') {
+      const edge = this.graphData.edges.find((e) => e.id === id);
+      if (!edge) return;
+      this.nodeMeshes.forEach((mesh, vId) => {
+        if (vId === edge.a || vId === edge.b) {
+          mesh.material.transparent = false;
+          mesh.material.opacity = 1.0;
+          mesh.material.emissiveIntensity = 0.75;
+          mesh.scale.setScalar(mesh.userData.baseRadius * 1.25);
+          const lbl = this.nodeLabels.get(vId);
+          if (lbl) lbl.element.classList.remove('dimmed');
+        } else {
+          mesh.material.transparent = true;
+          mesh.material.opacity = 0.25;
+          const lbl = this.nodeLabels.get(vId);
+          if (lbl) lbl.element.classList.add('dimmed');
+        }
+      });
+      this.edgeObjects.forEach((line, eId) => {
+        if (eId === id) {
+          line.material.opacity = 1.0;
+          line.material.color.setHex(0x10B981);
+        } else {
+          line.material.opacity = 0.12;
+        }
+      });
+    }
+  }
+
+  clearHighlight() {
+    this.selectedElement = null;
+    this.nodeMeshes.forEach((mesh, vId) => {
+      mesh.material.transparent = false;
+      mesh.material.opacity = 1.0;
+      mesh.material.color.setHex(mesh.userData.baseColor);
+      mesh.material.emissive.setHex(mesh.userData.baseColor);
+      mesh.material.emissiveIntensity = vId === 'ai' ? 0.32 : 0.15;
+      mesh.scale.setScalar(mesh.userData.baseRadius);
+
+      const lbl = this.nodeLabels.get(vId);
+      if (lbl) {
+        lbl.element.className = `three-label domain-${mesh.userData.vertexData.domain}`;
+      }
+    });
+
+    this.edgeObjects.forEach((line) => {
+      line.material.opacity = line.userData.baseOpacity;
+      line.material.color.setHex(line.userData.baseColor);
+    });
+  }
+
   // ---------------- GRAPH THEORY MODE SHADERS & VISUALIZATIONS ----------------
-  setModeVisuals(modeState) {
-    this.currentMode = modeState.mode;
-    this.selectedElement = modeState.selectedElement;
+  setModeVisuals(modeOrState, maybeOptions = {}) {
+    let mode = 'normal';
+    let options = {};
+
+    if (typeof modeOrState === 'string') {
+      mode = modeOrState;
+      options = maybeOptions || {};
+    } else if (typeof modeOrState === 'object' && modeOrState !== null) {
+      mode = modeOrState.mode || 'normal';
+      options = modeOrState;
+    }
+
+    this.currentMode = mode;
+    this.selectedElement = options.selectedElement || null;
 
     // Reset base materials
     this.nodeMeshes.forEach((mesh, id) => {
@@ -454,23 +566,29 @@ export class ThreeGraphEngine {
       case 'normal':
         this.renderNormalModeVisuals();
         break;
-      case 'path':
-        this.renderPathModeVisuals(modeState.activePath);
+      case 'path': {
+        const path = options.pathVertices || options.activePath || [];
+        this.renderPathModeVisuals(path);
         break;
-      case 'cycle':
-        this.renderCycleModeVisuals(modeState.activeCycle);
+      }
+      case 'cycle': {
+        const cycle = options.cycleVertices || options.activeCycle || [];
+        this.renderCycleModeVisuals(cycle);
         break;
-      case 'subgraph':
-        this.renderSubgraphModeVisuals(modeState.activeSubgraphs);
+      }
+      case 'subgraph': {
+        const subNodes = options.subgraphNodes || options.activeSubgraphs || [];
+        this.renderSubgraphModeVisuals(subNodes);
         break;
+      }
       case 'degree':
         this.renderDegreeModeVisuals();
         break;
       case 'component':
-        this.renderComponentModeVisuals(modeState.cutVertexRemoved);
+        this.renderComponentModeVisuals(options);
         break;
       case 'lab':
-        this.renderLabModeVisuals(modeState.lab);
+        this.renderLabModeVisuals(options.lab || options);
         break;
     }
   }
