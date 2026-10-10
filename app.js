@@ -46,6 +46,8 @@ import { ThreeGraphEngine } from "./three-scene.js";
   // State Management
   const STATE = {
     mode: "normal", // normal | path | cycle | subgraph | degree | component | lab
+    currentView: "3d", // 3d | 2d
+    currentDomainFilter: "all",
     selectedElement: null, // { type: 'vertex'|'edge', id: string }
     selectedPathId: "P1",
     pathCustomPair: [], // [fromId, toId] for connectivity explorer
@@ -2481,6 +2483,30 @@ import { ThreeGraphEngine } from "./three-scene.js";
   function highlightGraphElements() {
     if (!STATE.selectedElement) {
       if (STATE.mode === "normal") {
+        if (STATE.currentDomainFilter && STATE.currentDomainFilter !== "all") {
+          nodeDOMElements.forEach(({ group, halo, data }) => {
+            if (data.domain === STATE.currentDomainFilter) {
+              group.classList.remove("dimmed");
+              halo.style.opacity = "0.7";
+            } else {
+              group.classList.add("dimmed");
+              halo.style.opacity = "0";
+            }
+          });
+          edgeDOMElements.forEach(({ line, group, data }) => {
+            const vA = GRAPH.vertex(data.a);
+            const vB = GRAPH.vertex(data.b);
+            if (vA && vB && vA.domain === STATE.currentDomainFilter && vB.domain === STATE.currentDomainFilter) {
+              group.classList.remove("dimmed");
+              line.className.baseVal = "edge-line highlighted";
+            } else {
+              group.classList.add("dimmed");
+              line.className.baseVal = "edge-line";
+            }
+          });
+          return;
+        }
+
         nodeDOMElements.forEach(({ group, halo }) => {
           group.classList.remove("dimmed");
           halo.style.opacity = "0";
@@ -2545,6 +2571,54 @@ import { ThreeGraphEngine } from "./three-scene.js";
           line.className.baseVal = "edge-line";
         }
       });
+    }
+  }
+
+  /**
+   * Switch between Three.js 3D View and 2D Analytics Dashboard
+   */
+  function switchView(viewMode) {
+    STATE.currentView = viewMode;
+    const btn3d = document.getElementById("btn-view-3d");
+    const btn2d = document.getElementById("btn-view-2d");
+    const threeViewport = document.getElementById("three-viewport");
+    const cameraDock = document.getElementById("camera-dock");
+    const svgEl = document.getElementById("graph-svg");
+    const dashHud = document.getElementById("dashboard-2d-hud");
+
+    if (viewMode === "2d") {
+      btn2d?.classList.add("active");
+      btn3d?.classList.remove("active");
+      if (threeViewport) threeViewport.style.display = "none";
+      if (cameraDock) cameraDock.style.display = "none";
+      if (svgEl) svgEl.style.display = "block";
+      if (dashHud) dashHud.style.display = "flex";
+      applyMode();
+    } else {
+      btn3d?.classList.add("active");
+      btn2d?.classList.remove("active");
+      if (threeViewport) threeViewport.style.display = "block";
+      if (cameraDock) cameraDock.style.display = "flex";
+      if (svgEl) svgEl.style.display = "none";
+      if (dashHud) dashHud.style.display = "none";
+      if (threeEngine) {
+        threeEngine.onResize();
+        syncThreeEngineVisuals();
+      }
+    }
+  }
+
+  /**
+   * Filter 2D and 3D graphs by Knowledge Domain
+   */
+  function setDomainFilter(domain) {
+    STATE.currentDomainFilter = domain;
+    highlightGraphElements();
+    if (threeEngine && domain !== "all") {
+      const matchNodes = GRAPH.vertices.filter((v) => v.domain === domain).map((v) => v.id);
+      if (matchNodes.length > 0) {
+        threeEngine.focusNode(matchNodes[0], 800);
+      }
     }
   }
 
@@ -3928,7 +4002,28 @@ import { ThreeGraphEngine } from "./three-scene.js";
       });
     }
 
-    // Global keyboard shortcuts for Phase 3 & Motion & Search
+    // 3D / 2D View Switcher Controls
+    const btnView3D = document.getElementById("btn-view-3d");
+    const btnView2D = document.getElementById("btn-view-2d");
+    if (btnView3D) {
+      btnView3D.addEventListener("click", () => switchView("3d"));
+    }
+    if (btnView2D) {
+      btnView2D.addEventListener("click", () => switchView("2d"));
+    }
+
+    // 2D Dashboard Domain Filter Pills
+    const domainPills = document.querySelectorAll(".dash-domain-pill");
+    domainPills.forEach((pill) => {
+      pill.addEventListener("click", () => {
+        domainPills.forEach((p) => p.classList.remove("active"));
+        pill.classList.add("active");
+        const domain = pill.getAttribute("data-domain");
+        setDomainFilter(domain);
+      });
+    });
+
+    // Global keyboard shortcuts for Phase 3 & Motion & Search & Views
     window.addEventListener("keydown", (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
 
@@ -3942,6 +4037,8 @@ import { ThreeGraphEngine } from "./three-scene.js";
           input.focus();
           input.select();
         }
+      } else if (e.key.toLowerCase() === "v") {
+        switchView(STATE.currentView === "3d" ? "2d" : "3d");
       } else if (e.key.toLowerCase() === "m") {
         toggleMotion();
       } else if (e.key.toLowerCase() === "t") {
@@ -4081,7 +4178,10 @@ import { ThreeGraphEngine } from "./three-scene.js";
     isMotionActive: () => isMotionActive,
     get3DEngine: () => threeEngine,
     resetCamera: () => { if (threeEngine) threeEngine.resetCamera(); },
-    focusNode: (id) => { if (threeEngine) threeEngine.focusNode(id); }
+    focusNode: (id) => { if (threeEngine) threeEngine.focusNode(id); },
+    switchView: switchView,
+    getView: () => STATE.currentView,
+    setDomainFilter: setDomainFilter
   };
 
   // Hash routing for direct navigation and screenshot captures
@@ -4089,7 +4189,9 @@ import { ThreeGraphEngine } from "./three-scene.js";
     const hash = window.location.hash.toLowerCase();
     const presMatch = hash.match(/^#presentation-?(\d+)?$/);
 
-    if (hash === "#normal") window.AI_GRAPH_APP.setMode("normal");
+    if (hash === "#2d" || hash === "#dashboard") switchView("2d");
+    else if (hash === "#3d") switchView("3d");
+    else if (hash === "#normal") window.AI_GRAPH_APP.setMode("normal");
     else if (hash === "#degree") window.AI_GRAPH_APP.setMode("degree");
     else if (hash === "#path-p1") window.AI_GRAPH_APP.setPath("P1");
     else if (hash === "#cycle-c1") window.AI_GRAPH_APP.setCycle("C1");
@@ -4137,10 +4239,10 @@ import { ThreeGraphEngine } from "./three-scene.js";
           clearSelection();
         }
       });
-      if (svg) svg.style.display = "none";
+      switchView("3d");
     } catch (err) {
-      console.warn("ThreeGraphEngine 3D WebGL initialization error, maintaining SVG fallback:", err);
-      if (svg) svg.style.display = "block";
+      console.warn("ThreeGraphEngine 3D WebGL initialization error, maintaining 2D SVG fallback:", err);
+      switchView("2d");
     }
   }
 

@@ -46,6 +46,16 @@
           <div class="search-dropdown" id="search-dropdown"></div>
         </div>
 
+        <!-- 3D Universe vs 2D Dashboard View Switcher -->
+        <div class="view-switch-dock" id="view-switch-dock">
+          <button class="view-switch-btn active" id="btn-view-3d" data-view="3d" title="Switch to 3D Knowledge Universe (V)">
+            <span class="view-icon">🪐</span><span>3D VIEW</span>
+          </button>
+          <button class="view-switch-btn" id="btn-view-2d" data-view="2d" title="Switch to 2D Graph & Analytics Dashboard (V)">
+            <span class="view-icon">📊</span><span>2D DASHBOARD</span>
+          </button>
+        </div>
+
         <!-- Six Main Modes -->
         <nav class="mode-nav" id="mode-nav">
           <button class="mode-btn active" data-mode="normal" id="btn-mode-normal">
@@ -118,6 +128,51 @@
           <span class="camera-dock-icon">🎯</span>
           <span>Focus AI</span>
         </button>
+      </div>
+
+      <!-- 2D Analytics Dashboard Overlay Bar (Visible in 2D Dashboard View) -->
+      <div class="dashboard-2d-hud" id="dashboard-2d-hud" style="display: none;">
+        <div class="dash-kpi-strip">
+          <div class="dash-kpi-item">
+            <span class="dash-kpi-label">VERTICES |V|</span>
+            <span class="dash-kpi-val">28</span>
+          </div>
+          <div class="dash-kpi-item">
+            <span class="dash-kpi-label">EDGES |E|</span>
+            <span class="dash-kpi-val">39</span>
+          </div>
+          <div class="dash-kpi-item">
+            <span class="dash-kpi-label">COMPONENTS</span>
+            <span class="dash-kpi-val">2 <small>(K1:25, K2:3)</small></span>
+          </div>
+          <div class="dash-kpi-item">
+            <span class="dash-kpi-label">HANDSHAKING LEMMA</span>
+            <span class="dash-kpi-val highlight-green">Σdeg = 78 = 2×39</span>
+          </div>
+          <div class="dash-kpi-item">
+            <span class="dash-kpi-label">MAX DEGREE HUB</span>
+            <span class="dash-kpi-val highlight-green">Data (deg 7)</span>
+          </div>
+          <div class="dash-kpi-item">
+            <span class="dash-kpi-label">CUT VERTEX</span>
+            <span class="dash-kpi-val highlight-rose">Data (c=3)</span>
+          </div>
+          <div class="dash-kpi-item">
+            <span class="dash-kpi-label">BRIDGE EDGE</span>
+            <span class="dash-kpi-val highlight-amber">E18 (Data━Dataset)</span>
+          </div>
+        </div>
+
+        <div class="dash-domain-filter-strip">
+          <span class="dash-filter-title">DOMAIN FILTER:</span>
+          <button class="dash-domain-pill active" data-domain="all">All (28)</button>
+          <button class="dash-domain-pill" data-domain="learning" style="--pill-color: #0284C7;">Learning (11)</button>
+          <button class="dash-domain-pill" data-domain="vision" style="--pill-color: #E11D48;">Vision (4)</button>
+          <button class="dash-domain-pill" data-domain="nlp" style="--pill-color: #059669;">NLP (6)</button>
+          <button class="dash-domain-pill" data-domain="reasoning" style="--pill-color: #EA580C;">Reasoning (3)</button>
+          <button class="dash-domain-pill" data-domain="core" style="--pill-color: #D97706;">Core AI (1)</button>
+          <button class="dash-domain-pill" data-domain="special" style="--pill-color: #7C3AED;">Specialized K2 (3)</button>
+        </div>
       </div>
 
       <svg id="graph-svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid meet">
