@@ -13,6 +13,13 @@ desktop.ini
 node_modules/
 package-lock.json
 
+# Python Virtual Environments
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
 # Temporary & Log files
 *.log
 npm-debug.log*
