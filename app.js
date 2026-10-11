@@ -2642,6 +2642,16 @@ import { ThreeGraphEngine } from "./three-scene.js";
         `;
         subLeft.appendChild(caption);
 
+        const startPresBtn = document.createElement("button");
+        startPresBtn.className = "sub-btn sub-btn-present";
+        startPresBtn.id = "sub-btn-present";
+        startPresBtn.innerHTML = `<span>🎤 Oral Presentation Deck (11 Slides)</span>`;
+        startPresBtn.title = "Launch Oral Presentation Mode (P)";
+        startPresBtn.addEventListener("click", () => {
+          togglePresentationMode();
+        });
+        subRight.appendChild(startPresBtn);
+
         const startLabBtn = document.createElement("button");
         startLabBtn.className = "sub-btn active";
         startLabBtn.style.cssText = "background: linear-gradient(135deg, #059669, #047857); color: #FFFFFF; font-weight: 700; border: none; box-shadow: 0 2px 8px rgba(5,150,105,0.3); cursor: pointer; padding: 6px 14px; border-radius: 8px; display: flex; align-items: center; gap: 6px;";
@@ -3585,17 +3595,19 @@ import { ThreeGraphEngine } from "./three-scene.js";
   function enterPresentationMode() {
     presActive = true;
     presCurrentSlide = 0;
-    presentationStrip.classList.add("active");
+    if (presentationStrip) presentationStrip.classList.add("active");
     document.body.classList.add("presentation-active");
-    document.getElementById("btn-toggle-present").classList.add("active");
+    document.getElementById("btn-toggle-present")?.classList.add("active");
+    document.getElementById("sub-btn-present")?.classList.add("active");
     renderCurrentSlide();
   }
 
   function exitPresentationMode() {
     presActive = false;
-    presentationStrip.classList.remove("active");
+    if (presentationStrip) presentationStrip.classList.remove("active");
     document.body.classList.remove("presentation-active");
-    document.getElementById("btn-toggle-present").classList.remove("active");
+    document.getElementById("btn-toggle-present")?.classList.remove("active");
+    document.getElementById("sub-btn-present")?.classList.remove("active");
   }
 
   function renderCurrentSlide() {
@@ -4052,9 +4064,11 @@ import { ThreeGraphEngine } from "./three-scene.js";
         else openDrawer("diary");
       } else if (e.key.toLowerCase() === "p") {
         togglePresentationMode();
-      } else if (presActive && e.key === "ArrowRight") {
+      } else if (presActive && (e.key === "ArrowRight" || e.key === " " || e.key === "Enter")) {
+        e.preventDefault();
         nextSlide();
-      } else if (presActive && e.key === "ArrowLeft") {
+      } else if (presActive && (e.key === "ArrowLeft" || e.key === "Backspace")) {
+        e.preventDefault();
         prevSlide();
       }
     });
@@ -4191,6 +4205,16 @@ import { ThreeGraphEngine } from "./three-scene.js";
 
     if (hash === "#2d" || hash === "#dashboard") switchView("2d");
     else if (hash === "#3d") switchView("3d");
+    else if (hash === "#present" || hash === "#presentation" || presMatch) {
+      window.AI_GRAPH_APP.enterPresentation();
+      if (presMatch && presMatch[1]) {
+        const slideIdx = parseInt(presMatch[1], 10) - 1;
+        if (slideIdx >= 0 && slideIdx < PRESENTATION_SLIDES.length) {
+          presCurrentSlide = slideIdx;
+          renderCurrentSlide();
+        }
+      }
+    }
     else if (hash === "#normal") window.AI_GRAPH_APP.setMode("normal");
     else if (hash === "#degree") window.AI_GRAPH_APP.setMode("degree");
     else if (hash === "#path-p1") window.AI_GRAPH_APP.setPath("P1");
