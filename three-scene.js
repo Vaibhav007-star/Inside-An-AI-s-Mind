@@ -590,7 +590,176 @@ export class ThreeGraphEngine {
       case 'lab':
         this.renderLabModeVisuals(options.lab || options);
         break;
+      case 'dijkstra':
+        this.renderDijkstraVisuals(options);
+        break;
+      case 'vertexColoring':
+        this.renderVertexColoringVisuals(options);
+        break;
+      case 'edgeColoring':
+        this.renderEdgeColoringVisuals(options);
+        break;
+      case 'eulerian':
+        this.renderEulerianVisuals(options);
+        break;
+      case 'hamiltonian':
+        this.renderHamiltonianVisuals(options);
+        break;
+      case 'planar':
+        this.renderPlanarVisuals(options);
+        break;
     }
+  }
+
+  renderDijkstraVisuals(options = {}) {
+    const path = options.path || [];
+    const distances = options.distances || {};
+    const pathSet = new Set(path);
+
+    this.nodeMeshes.forEach((mesh, id) => {
+      if (pathSet.has(id)) {
+        mesh.material.emissive.setHex(id === options.startId ? 0xF59E0B : 0x10B981);
+        mesh.material.emissiveIntensity = 0.8;
+        const lbl = this.nodeLabels.get(id);
+        if (lbl) {
+          lbl.element.classList.remove('dimmed');
+          lbl.element.classList.add('highlight-path');
+        }
+      } else if (distances[id] !== undefined && distances[id] < Infinity) {
+        mesh.material.opacity = 0.55;
+        mesh.material.emissive.setHex(0x06B6D4);
+        mesh.material.emissiveIntensity = 0.3;
+      } else {
+        mesh.material.opacity = 0.2;
+        const lbl = this.nodeLabels.get(id);
+        if (lbl) lbl.element.classList.add('dimmed');
+      }
+    });
+
+    for (let i = 0; i < path.length - 1; i++) {
+      const u = path[i];
+      const v = path[i + 1];
+      const edge = this.graphData.edges.find((e) => (e.a === u && e.b === v) || (e.a === v && e.b === u));
+      if (edge) {
+        const line = this.edgeObjects.get(edge.id);
+        if (line) {
+          line.material.color.setHex(0x10B981);
+          line.material.opacity = 1.0;
+        }
+      }
+    }
+  }
+
+  renderVertexColoringVisuals(options = {}) {
+    const colors = options.colors || {};
+    const palette = {
+      1: 0x06B6D4,
+      2: 0x10B981,
+      3: 0xF59E0B,
+      4: 0xF43F5E
+    };
+
+    this.nodeMeshes.forEach((mesh, id) => {
+      const c = colors[id] || 1;
+      const hex = palette[c] || 0x10B981;
+      mesh.material.color.setHex(hex);
+      mesh.material.emissive.setHex(hex);
+      mesh.material.emissiveIntensity = 0.7;
+      const lbl = this.nodeLabels.get(id);
+      if (lbl) {
+        lbl.element.classList.remove('dimmed');
+      }
+    });
+
+    this.edgeObjects.forEach((line) => {
+      line.material.opacity = 0.35;
+      line.material.color.setHex(0x94A3B8);
+    });
+  }
+
+  renderEdgeColoringVisuals(options = {}) {
+    const edgeColors = options.edgeColors || {};
+    const palette = {
+      1: 0x06B6D4,
+      2: 0x10B981,
+      3: 0xF59E0B,
+      4: 0xEC4899,
+      5: 0x8B5CF6,
+      6: 0x3B82F6,
+      7: 0xEF4444
+    };
+
+    this.nodeMeshes.forEach((mesh) => {
+      mesh.material.opacity = 0.35;
+      mesh.material.emissiveIntensity = 0.1;
+    });
+
+    this.edgeObjects.forEach((line, eId) => {
+      const c = edgeColors[eId] || 1;
+      const hex = palette[c] || 0x10B981;
+      line.material.color.setHex(hex);
+      line.material.opacity = 1.0;
+    });
+  }
+
+  renderEulerianVisuals(options = {}) {
+    const oddVertices = options.oddVertices || [];
+    const oddSet = new Set(oddVertices.map((v) => (typeof v === 'string' ? v : v.id)));
+
+    this.nodeMeshes.forEach((mesh, id) => {
+      if (oddSet.has(id)) {
+        mesh.material.color.setHex(0xE11D48);
+        mesh.material.emissive.setHex(0xE11D48);
+        mesh.material.emissiveIntensity = 0.9;
+        const lbl = this.nodeLabels.get(id);
+        if (lbl) lbl.element.classList.remove('dimmed');
+      } else {
+        mesh.material.opacity = 0.2;
+        const lbl = this.nodeLabels.get(id);
+        if (lbl) lbl.element.classList.add('dimmed');
+      }
+    });
+
+    this.edgeObjects.forEach((line) => {
+      line.material.opacity = 0.25;
+    });
+  }
+
+  renderHamiltonianVisuals(options = {}) {
+    this.nodeMeshes.forEach((mesh, id) => {
+      if (id === 'data') {
+        mesh.material.color.setHex(0xF59E0B);
+        mesh.material.emissive.setHex(0xF59E0B);
+        mesh.material.emissiveIntensity = 0.9;
+        mesh.scale.setScalar(mesh.userData.baseRadius * 1.35);
+      } else if (id === 'dataset') {
+        mesh.material.color.setHex(0xE11D48);
+        mesh.material.emissive.setHex(0xE11D48);
+        mesh.material.emissiveIntensity = 0.75;
+      } else {
+        mesh.material.opacity = 0.35;
+      }
+    });
+
+    this.edgeObjects.forEach((line, eId) => {
+      if (eId === 'E18') {
+        line.material.color.setHex(0xE11D48);
+        line.material.opacity = 1.0;
+      } else {
+        line.material.opacity = 0.2;
+      }
+    });
+  }
+
+  renderPlanarVisuals(options = {}) {
+    this.nodeMeshes.forEach((mesh) => {
+      mesh.material.emissive.setHex(0x06B6D4);
+      mesh.material.emissiveIntensity = 0.55;
+    });
+    this.edgeObjects.forEach((line) => {
+      line.material.color.setHex(0x10B981);
+      line.material.opacity = 0.85;
+    });
   }
 
   renderNormalModeVisuals() {

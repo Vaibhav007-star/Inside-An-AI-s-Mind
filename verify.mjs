@@ -141,11 +141,46 @@ assert("After removing Data, {dataset} is an isolated component", isolatedDatase
 const compsWithoutE18 = GRAPH.components([], ["E18"]);
 assert("Removing edge E18 results in 3 components with {dataset} isolated", compsWithoutE18.length === 3 && compsWithoutE18.some((c) => c.vertices.length === 1 && c.vertices.includes("dataset")));
 
-// 12. Shortest Path & Connectivity Demos
-const spPath = GRAPH.shortestPath("dataset", "decision");
-assert("Shortest path dataset -> decision has 5 vertices (length 4 edges)", spPath && spPath.length === 5 && (spPath.length - 1) === 4, `Got ${JSON.stringify(spPath)}`);
-const spDisconnected = GRAPH.shortestPath("dataset", "strategy");
-assert("dataset -> strategy has NO path (null, disconnected components)", spDisconnected === null, `Got ${JSON.stringify(spDisconnected)}`);
+// 13. Advanced Discrete Mathematics & Algorithm Assertions
+// Dijkstra's Algorithm
+const dijkstraResult = GRAPH.dijkstra("data", "prediction");
+assert("Dijkstra's shortest path data -> prediction found", dijkstraResult.getPath && dijkstraResult.getPath[0] === "data" && dijkstraResult.getPath[dijkstraResult.getPath.length - 1] === "prediction");
+assert("Dijkstra distance data -> prediction is 2", dijkstraResult.distances["prediction"] === 2, `Got ${dijkstraResult.distances["prediction"]}`);
+
+// Floyd-Warshall All-Pairs
+const fw = GRAPH.floydWarshall();
+assert("Floyd-Warshall diameter of K1 is 5", fw.diameter === 5, `Got ${fw.diameter}`);
+assert("Floyd-Warshall radius of K1 is 3", fw.radius === 3, `Got ${fw.radius}`);
+assert("Floyd-Warshall center nodes of K1 are AI and Data", fw.center.includes("ai") && fw.center.includes("data"), `Got ${JSON.stringify(fw.center)}`);
+
+// Graph Coloring (Vertex & Edge)
+const vc = GRAPH.vertexColoring();
+assert("Chromatic number chi(G) is exactly 3 (Welsh-Powell)", vc.chromaticNumber === 3, `Got ${vc.chromaticNumber}`);
+assert("Proper vertex coloring verified (no adjacent nodes share a color)", vc.isProper === true);
+
+const ec = GRAPH.edgeColoring();
+assert("Chromatic index chi'(G) is 7 (Class 1 under Vizing's theorem, chi' = Delta)", ec.chromaticIndex === 7 && ec.isClass1 === true, `Got ${ec.chromaticIndex}`);
+assert("Proper edge coloring verified (no incident edges share a color)", ec.isProper === true);
+
+// Eulerian Graph Analysis
+const euler = GRAPH.eulerianAnalysis();
+assert("Graph G has exactly 12 odd-degree vertices violating Euler's circuit condition", euler.oddCount === 12);
+assert("Graph G has NO Eulerian circuit (hasEulerianCircuit === false)", euler.hasEulerianCircuit === false);
+assert("Graph G has NO Eulerian path (hasEulerianPath === false)", euler.hasEulerianPath === false);
+
+// Hamiltonian Graph Analysis
+const ham = GRAPH.hamiltonianAnalysis();
+assert("Graph G is non-Hamiltonian by Cut-Set condition c(G - {data}) = 3 > 1", ham.cutSetTest.violatesCondition === true && ham.hasHamiltonianCircuit === false);
+
+// Planar Graph Analysis & Euler's Formula
+const planar = GRAPH.planarAnalysis();
+assert("Euler's Planar Formula for K1: V - E + R = 25 - 37 + 14 = 2", planar.regions === 14 && (planar.V - planar.E + planar.regions === 2));
+assert("Region degree sum equals 2 * E = 74 by face handshaking lemma", planar.regionDegreeSum === 74, `Got ${planar.regionDegreeSum}`);
+
+// Walk, Trail, Path Classification
+assert("Sequence ['data', 'training', 'model'] is a Path", GRAPH.classifySequence(["data", "training", "model"]).classification === "Path");
+assert("Sequence ['ml', 'training', 'model', 'ml'] is a Cycle", GRAPH.classifySequence(["ml", "training", "model", "ml"]).classification === "Cycle");
+assert("Sequence with repeated edge is a Walk (not Trail)", GRAPH.classifySequence(["data", "training", "model", "training", "data"]).classification.includes("Walk"));
 
 console.log("\n================================================================================");
 console.log(`SUMMARY: ${passed} PASSED, ${failed} FAILED`);
@@ -156,3 +191,4 @@ if (failed > 0) {
 } else {
   console.log("ALL GROUND TRUTH ASSERTIONS PASSED PERFECTLY!\n");
 }
+

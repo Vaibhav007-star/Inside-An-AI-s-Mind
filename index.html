@@ -89,6 +89,9 @@
           <button class="mode-btn examiner-mode-btn" id="btn-toggle-examiner" title="Examiner Quick Demo Mode (E)">
             <span>EXAMINER</span><span class="btn-key">E</span>
           </button>
+          <button class="mode-btn adv-btn-pill" id="btn-drawer-advanced" title="Advanced Discrete Mathematics & Algorithms (X)">
+            <span class="adv-pill-icon">⚡</span><span>ADVANCED</span><span class="btn-key">X</span>
+          </button>
           <button class="mode-btn" id="btn-drawer-theory" title="Graph Theory Concept Cards (T)">
             <span>THEORY</span><span class="btn-key">T</span>
           </button>
@@ -434,6 +437,24 @@
           <button class="drawer-close" data-close-drawer="diary">&times;</button>
         </div>
         <div class="drawer-body" id="diary-drawer-body"></div>
+      </aside>
+
+      <!-- DRAWER 4: Advanced Discrete Mathematics & Algorithms -->
+      <aside class="slide-drawer drawer-advanced-panel" id="drawer-advanced">
+        <div class="drawer-header">
+          <div class="drawer-title">
+            <span class="adv-header-glow">⚡ ADVANCED DISCRETE MATHEMATICS</span>
+          </div>
+          <button class="drawer-close" data-close-drawer="advanced">&times;</button>
+        </div>
+        <div class="adv-tabs-bar" id="adv-tabs-bar">
+          <button class="adv-tab-btn active" data-adv-tab="dijkstra">Dijkstra & Floyd</button>
+          <button class="adv-tab-btn" data-adv-tab="coloring">Graph Coloring</button>
+          <button class="adv-tab-btn" data-adv-tab="euler-hamilton">Euler & Hamilton</button>
+          <button class="adv-tab-btn" data-adv-tab="planar">Planar & Regions</button>
+          <button class="adv-tab-btn" data-adv-tab="walks">Walks & Trails</button>
+        </div>
+        <div class="drawer-body adv-drawer-body" id="advanced-drawer-body"></div>
       </aside>
 
       <!-- Bottom Legend -->

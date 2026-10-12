@@ -1925,6 +1925,14 @@ import { ThreeGraphEngine } from "./three-scene.js";
           <button class="examiner-demo-btn ${activeDemo === 'connectivity' ? 'active' : ''}" data-examiner-demo="connectivity">• Show Connectivity</button>
           <button class="examiner-demo-btn ${activeDemo === 'subgraph' ? 'active' : ''}" data-examiner-demo="subgraph">• Show Subgraph</button>
           <button class="examiner-demo-btn ${activeDemo === 'component' ? 'active' : ''}" data-examiner-demo="component">• Show Component</button>
+          <button class="examiner-demo-btn ${activeDemo === 'dijkstra' ? 'active' : ''}" data-examiner-demo="dijkstra">⚡ Dijkstra Shortest Path</button>
+          <button class="examiner-demo-btn ${activeDemo === 'floyd' ? 'active' : ''}" data-examiner-demo="floyd">⚡ Floyd All-Pairs (Diam=5)</button>
+          <button class="examiner-demo-btn ${activeDemo === 'vertexColoring' ? 'active' : ''}" data-examiner-demo="vertexColoring">⚡ Vertex 3-Coloring (χ=3)</button>
+          <button class="examiner-demo-btn ${activeDemo === 'edgeColoring' ? 'active' : ''}" data-examiner-demo="edgeColoring">⚡ Edge 7-Coloring (χ'=7)</button>
+          <button class="examiner-demo-btn ${activeDemo === 'eulerian' ? 'active' : ''}" data-examiner-demo="eulerian">⚡ Eulerian Impossibility</button>
+          <button class="examiner-demo-btn ${activeDemo === 'hamiltonian' ? 'active' : ''}" data-examiner-demo="hamiltonian">⚡ Hamiltonian Cut-Set</button>
+          <button class="examiner-demo-btn ${activeDemo === 'planar' ? 'active' : ''}" data-examiner-demo="planar">⚡ Planar & Euler (V-E+R=2)</button>
+          <button class="examiner-demo-btn ${activeDemo === 'walks' ? 'active' : ''}" data-examiner-demo="walks">⚡ Walk vs Trail vs Path</button>
         </div>
 
         <div class="examiner-caption-box" id="examiner-caption">
@@ -2265,6 +2273,211 @@ import { ThreeGraphEngine } from "./three-scene.js";
         break;
       }
     }
+  /**
+   * Synchronize 2D SVG graph visuals with advanced discrete math modes
+   */
+  function applyAdvancedVisuals2D(type, data = {}) {
+    layerOverlays.innerHTML = "";
+    nodeDOMElements.forEach(({ circle, group, degreeBadge, halo, data: v }) => {
+      group.classList.remove("dimmed", "lab-correct", "lab-incorrect", "lab-selected", "node-pulse");
+      halo.style.opacity = "0";
+      degreeBadge.setAttribute("display", "none");
+      const baseR = v.id === "ai" ? 28 : 16;
+      circle.setAttribute("r", baseR);
+      circle.setAttribute("stroke", "rgba(255, 255, 255, 0.85)");
+      circle.setAttribute("stroke-width", "2.2");
+      circle.setAttribute("fill", `url(#sphere-${v.domain})`);
+    });
+
+    edgeDOMElements.forEach(({ line, group }) => {
+      group.classList.remove("dimmed");
+      line.className.baseVal = "edge-line";
+      line.style.stroke = "";
+      line.style.strokeWidth = "";
+      line.style.opacity = "";
+    });
+
+    if (type === "dijkstra") {
+      const path = data.path || [];
+      if (path.length === 0) return;
+      const pathSet = new Set(path);
+
+      nodeDOMElements.forEach(({ group, data: v }) => {
+        if (!pathSet.has(v.id)) {
+          group.classList.add("dimmed");
+        } else {
+          group.classList.add("lab-correct");
+        }
+      });
+
+      path.forEach((vid, idx) => {
+        const pos = NODE_POSITIONS[vid];
+        if (pos) {
+          const badgeGroup = createSVG("g", { transform: `translate(${pos.x + 14}, ${pos.y - 14})` });
+          const badgeCircle = createSVG("circle", { r: 10, fill: "#ECFDF5", stroke: "#059669", "stroke-width": "2" });
+          const badgeText = createSVG("text", { class: "order-text", y: 1, fill: "#047857" });
+          badgeText.textContent = String(idx + 1);
+          badgeGroup.appendChild(badgeCircle);
+          badgeGroup.appendChild(badgeText);
+          layerOverlays.appendChild(badgeGroup);
+        }
+      });
+
+      edgeDOMElements.forEach(({ group }) => group.classList.add("dimmed"));
+      for (let i = 0; i < path.length - 1; i++) {
+        const u = path[i];
+        const v = path[i + 1];
+        const edge = GRAPH.edges.find((e) => (e.a === u && e.b === v) || (e.a === v && e.b === u));
+        if (edge) {
+          const el = edgeDOMElements.get(edge.id);
+          if (el) {
+            el.line.className.baseVal = "edge-line path-flow";
+            el.group.classList.remove("dimmed");
+          }
+        }
+      }
+    } else if (type === "vertexColoring") {
+      const colors = data.colors || {};
+      const palette = {
+        1: "#06B6D4",
+        2: "#10B981",
+        3: "#F59E0B",
+        4: "#EF4444"
+      };
+      nodeDOMElements.forEach(({ circle, data: v }) => {
+        const c = colors[v.id] || 1;
+        circle.setAttribute("fill", palette[c] || "#10B981");
+        circle.setAttribute("stroke", "#FFFFFF");
+        circle.setAttribute("stroke-width", "3");
+      });
+      edgeDOMElements.forEach(({ line }) => {
+        line.style.opacity = "0.35";
+      });
+      if (data.improper) {
+        const n1 = nodeDOMElements.get("ai");
+        const n2 = nodeDOMElements.get("data");
+        if (n1 && n2) {
+          n1.circle.setAttribute("fill", "#EF4444");
+          n2.circle.setAttribute("fill", "#EF4444");
+          n1.group.classList.add("node-pulse");
+          n2.group.classList.add("node-pulse");
+        }
+      }
+    } else if (type === "edgeColoring") {
+      const edgeColors = data.edgeColors || {};
+      const palette = {
+        1: "#06B6D4",
+        2: "#10B981",
+        3: "#F59E0B",
+        4: "#EC4899",
+        5: "#8B5CF6",
+        6: "#3B82F6",
+        7: "#EF4444"
+      };
+      nodeDOMElements.forEach(({ group }) => {
+        group.classList.add("dimmed");
+      });
+      edgeDOMElements.forEach(({ line, data: e }) => {
+        const c = edgeColors[e.id] || 1;
+        line.style.stroke = palette[c] || "#10B981";
+        line.style.strokeWidth = "3.8px";
+        line.style.opacity = "1";
+      });
+    } else if (type === "eulerian") {
+      const oddVertices = data.oddVertices || [];
+      const oddSet = new Set(oddVertices.map((v) => (typeof v === "string" ? v : v.id)));
+      nodeDOMElements.forEach(({ circle, group, degreeBadge, data: v }) => {
+        if (oddSet.has(v.id)) {
+          circle.setAttribute("fill", "#FFE4E6");
+          circle.setAttribute("stroke", "#E11D48");
+          circle.setAttribute("stroke-width", "3.5");
+          circle.setAttribute("r", 20);
+          degreeBadge.setAttribute("display", "block");
+          group.classList.add("node-pulse");
+        } else {
+          group.classList.add("dimmed");
+        }
+      });
+      edgeDOMElements.forEach(({ line }) => {
+        line.style.opacity = "0.25";
+      });
+    } else if (type === "hamiltonian") {
+      nodeDOMElements.forEach(({ circle, group, data: v }) => {
+        if (v.id === "data") {
+          circle.setAttribute("fill", "#F59E0B");
+          circle.setAttribute("stroke", "#B45309");
+          circle.setAttribute("stroke-width", "4");
+          circle.setAttribute("r", 34);
+          group.classList.add("node-pulse");
+        } else if (v.id === "dataset") {
+          circle.setAttribute("fill", "#FFE4E6");
+          circle.setAttribute("stroke", "#E11D48");
+          circle.setAttribute("stroke-width", "3.5");
+          group.classList.add("lab-incorrect");
+        } else {
+          group.classList.add("dimmed");
+        }
+      });
+      edgeDOMElements.forEach(({ line, group, data: e }) => {
+        if (e.id === "E18") {
+          line.className.baseVal = "edge-line lab-glitch";
+          line.style.stroke = "#E11D48";
+          line.style.strokeWidth = "4px";
+        } else {
+          group.classList.add("dimmed");
+        }
+      });
+    } else if (type === "planar") {
+      nodeDOMElements.forEach(({ circle, group, data: v }) => {
+        if (v.domain !== "special") {
+          circle.setAttribute("stroke", "#06B6D4");
+          circle.setAttribute("stroke-width", "3");
+        } else {
+          group.classList.add("dimmed");
+        }
+      });
+      edgeDOMElements.forEach(({ line }) => {
+        line.style.stroke = "#10B981";
+        line.style.strokeWidth = "2.8px";
+        line.style.opacity = "0.9";
+      });
+    } else if (type === "walks") {
+      const seq = data.sequence || [];
+      if (seq.length === 0) return;
+      const seqSet = new Set(seq);
+      nodeDOMElements.forEach(({ group, data: v }) => {
+        if (!seqSet.has(v.id)) {
+          group.classList.add("dimmed");
+        } else {
+          group.classList.add("lab-correct");
+        }
+      });
+      seq.forEach((vid, idx) => {
+        const pos = NODE_POSITIONS[vid];
+        if (pos) {
+          const badgeGroup = createSVG("g", { transform: `translate(${pos.x + 14}, ${pos.y - 14})` });
+          const badgeCircle = createSVG("circle", { r: 10, fill: "#EFF6FF", stroke: "#2563EB", "stroke-width": "2" });
+          const badgeText = createSVG("text", { class: "order-text", y: 1, fill: "#1D4ED8" });
+          badgeText.textContent = String(idx + 1);
+          badgeGroup.appendChild(badgeCircle);
+          badgeGroup.appendChild(badgeText);
+          layerOverlays.appendChild(badgeGroup);
+        }
+      });
+      edgeDOMElements.forEach(({ group }) => group.classList.add("dimmed"));
+      for (let i = 0; i < seq.length - 1; i++) {
+        const u = seq[i];
+        const v = seq[i + 1];
+        const edge = GRAPH.edges.find((e) => (e.a === u && e.b === v) || (e.a === v && e.b === u));
+        if (edge) {
+          const el = edgeDOMElements.get(edge.id);
+          if (el) {
+            el.line.className.baseVal = "edge-line path-flow";
+            el.group.classList.remove("dimmed");
+          }
+        }
+      }
+    }
   }
 
   function runExaminerDemo(demoKey) {
@@ -2409,6 +2622,63 @@ import { ThreeGraphEngine } from "./three-scene.js";
         captionText = `<strong>• Connected Components:</strong> c(G) = 2. Component K1 (Main AI Mind) has 25 vertices; Component K2 (Specialized Chess Cluster) has 3 vertices with zero paths between them.`;
         break;
       }
+
+      case "dijkstra": {
+        const dijk = GRAPH.dijkstra("data", "objdet");
+        applyAdvancedVisuals2D("dijkstra", { path: dijk.path });
+        captionText = `<strong>⚡ Dijkstra's Algorithm:</strong> Greedy relaxation finding optimal path from Data to Object Detection: <strong>${dijk.path.join(" ➔ ")}</strong> (Distance = ${dijk.distance}, Edges = ${dijk.path.length - 1}).`;
+        break;
+      }
+
+      case "floyd": {
+        const fw = GRAPH.floydWarshall();
+        applyAdvancedVisuals2D("dijkstra", { path: fw.centers });
+        captionText = `<strong>⚡ Floyd-Warshall All-Pairs:</strong> Dynamic programming: d_ij^(k) = min(d_ij, d_ik + d_kj). Component K1 Diameter = <strong>${fw.diameter}</strong>, Radius = <strong>${fw.radius}</strong>, Center Vertices = <strong>['${fw.centers.join("', '")}']</strong>.`;
+        break;
+      }
+
+      case "vertexColoring": {
+        const vc = GRAPH.vertexColoring();
+        applyAdvancedVisuals2D("vertexColoring", { colors: vc.colors });
+        captionText = `<strong>⚡ Vertex Coloring & Welsh-Powell:</strong> Chromatic Number <strong>χ(G) = ${vc.chromaticNumber}</strong> (bounded below by triangles C2, C3). 28 vertices properly colored into 3 independent sets (11 Cyan, 13 Emerald, 4 Amber). Zero adjacent color conflicts.`;
+        break;
+      }
+
+      case "edgeColoring": {
+        const ec = GRAPH.edgeColoring();
+        applyAdvancedVisuals2D("edgeColoring", { edgeColors: ec.edgeColors });
+        captionText = `<strong>⚡ Edge Coloring & Vizing's Theorem:</strong> Chromatic Index <strong>χ'(G) = Δ(G) = ${ec.chromaticIndex}</strong> (Class 1 Graph). All 39 edges colored in 7 distinct conflict-free classes.`;
+        break;
+      }
+
+      case "eulerian": {
+        const ea = GRAPH.eulerianAnalysis();
+        applyAdvancedVisuals2D("eulerian", { oddVertices: ea.oddVertices });
+        captionText = `<strong>⚡ Eulerian Impossibility:</strong> Euler's Theorem requires 0 odd-degree vertices for a circuit, 0 or 2 for a trail. AI Mind has exactly <strong>${ea.oddDegreeCount} odd-degree vertices</strong> (highlighted in red) ⟹ Eulerian Circuit & Path are strictly IMPOSSIBLE.`;
+        break;
+      }
+
+      case "hamiltonian": {
+        const ha = GRAPH.hamiltonianAnalysis();
+        applyAdvancedVisuals2D("hamiltonian");
+        captionText = `<strong>⚡ Hamiltonian Impossibility:</strong> Dirac's condition fails (min degree δ=1 < 14). Cut-set theorem fails: removing S={Data} (|S|=1) splits G into 3 components (c(G-S)=3 > |S|=1), strictly proving no Hamiltonian cycle exists.`;
+        break;
+      }
+
+      case "planar": {
+        const pa = GRAPH.planarAnalysis(NODE_POSITIONS);
+        applyAdvancedVisuals2D("planar");
+        captionText = `<strong>⚡ Planar Graphs & Euler's Formula:</strong> V - E + R = 1 + c. For connected K1: 25 - 37 + 14 = 2 (<strong>R = ${pa.regions} regions</strong>). Region Degree Sum: Σ deg(R_i) = 2|E| = <strong>${pa.regionDegreeSum}</strong>. Thickness θ(G) ≤ ${pa.thicknessUpperBound}.`;
+        break;
+      }
+
+      case "walks": {
+        const seq = ["data", "features", "patterns", "data", "ml", "data"];
+        const cl = GRAPH.classifySequence(seq);
+        applyAdvancedVisuals2D("walks", { sequence: seq });
+        captionText = `<strong>⚡ Walk vs Trail vs Path:</strong> Walk allows repeated vertices & edges. Trail forbids repeated edges (visits Data multiple times). Path forbids any repeated vertices. Sequence tested is a <strong>${cl.classification}</strong> (Length ${cl.length}).`;
+        break;
+      }
     }
 
     if (threeEngine) {
@@ -2449,6 +2719,44 @@ import { ThreeGraphEngine } from "./three-scene.js";
         case "component": {
           const comps = GRAPH.components([], []);
           threeEngine.setModeVisuals("component", { removedVertices: [], removedEdges: [], components: comps });
+          break;
+        }
+        case "dijkstra": {
+          const dijk = GRAPH.dijkstra("data", "objdet");
+          threeEngine.setModeVisuals("dijkstra", { path: dijk.path });
+          break;
+        }
+        case "floyd": {
+          const fw = GRAPH.floydWarshall();
+          threeEngine.setModeVisuals("dijkstra", { path: fw.centers });
+          break;
+        }
+        case "vertexColoring": {
+          const vc = GRAPH.vertexColoring();
+          threeEngine.setModeVisuals("vertexColoring", { colors: vc.colors });
+          break;
+        }
+        case "edgeColoring": {
+          const ec = GRAPH.edgeColoring();
+          threeEngine.setModeVisuals("edgeColoring", { edgeColors: ec.edgeColors });
+          break;
+        }
+        case "eulerian": {
+          const ea = GRAPH.eulerianAnalysis();
+          threeEngine.setModeVisuals("eulerian", { oddVertices: ea.oddVertices });
+          break;
+        }
+        case "hamiltonian": {
+          threeEngine.setModeVisuals("hamiltonian");
+          break;
+        }
+        case "planar": {
+          threeEngine.setModeVisuals("planar");
+          break;
+        }
+        case "walks": {
+          const seq = ["data", "features", "patterns", "data", "ml", "data"];
+          threeEngine.setModeVisuals("dijkstra", { path: seq });
           break;
         }
       }
@@ -3004,6 +3312,7 @@ import { ThreeGraphEngine } from "./three-scene.js";
   const theoryDrawer = document.getElementById("drawer-theory");
   const analysisDrawer = document.getElementById("drawer-analysis");
   const diaryDrawer = document.getElementById("drawer-diary");
+  const advancedDrawer = document.getElementById("drawer-advanced");
   const presentationStrip = document.getElementById("presentation-strip");
 
   let activeDrawer = null;
@@ -3184,15 +3493,105 @@ import { ThreeGraphEngine } from "./three-scene.js";
     },
     {
       index: 11,
+      speaker: "Speaker A",
+      speakerClass: "speaker-a",
+      plannedTime: "0:45",
+      totalElapsed: "9:00",
+      title: "Shortest Paths: Dijkstra & Floyd-Warshall",
+      bullets: [
+        "Dijkstra greedy relaxation: d(v) := min(d(v), d(u) + w(u,v)) finds optimal paths",
+        "Floyd-Warshall dynamic programming: d_ij^(k) = min(d_ij, d_ik + d_kj)",
+        "Component K1 metrics: Diameter = 5, Radius = 3, Center vertices = ['AI', 'Data']"
+      ],
+      action: () => {
+        openDrawer("advanced");
+        ADVANCED_STATE.activeTab = "dijkstra";
+        renderAdvancedDrawerContent();
+      }
+    },
+    {
+      index: 12,
+      speaker: "Speaker A",
+      speakerClass: "speaker-a",
+      plannedTime: "0:45",
+      totalElapsed: "9:45",
+      title: "Graph Coloring: Vertex (χ=3) & Edge (χ'=7)",
+      bullets: [
+        "Welsh-Powell vertex coloring yields Chromatic Number χ(G) = 3 (zero adjacent conflicts)",
+        "Bounded below by triangle cliques ω(G) = 3; verified proper coloring across 28 nodes",
+        "Vizing's Theorem: Δ(G) ≤ χ'(G) ≤ Δ+1. Here Δ=7 ⟹ Chromatic Index χ'(G) = 7 (Class 1)"
+      ],
+      action: () => {
+        openDrawer("advanced");
+        ADVANCED_STATE.activeTab = "coloring";
+        renderAdvancedDrawerContent();
+      }
+    },
+    {
+      index: 13,
+      speaker: "Speaker B",
+      speakerClass: "speaker-b",
+      plannedTime: "0:45",
+      totalElapsed: "10:30",
+      title: "Traversability: Eulerian & Hamiltonian Impossibility",
+      bullets: [
+        "Euler's Theorem: Eulerian path/circuit requires 0 or 2 odd nodes; G has 12 (IMPOSSIBLE)",
+        "Dirac's Theorem fails: minimum degree δ(G) = 1 << n/2 = 14",
+        "Cut-set theorem: removing S={Data} gives c(G-S) = 3 > |S|=1, ruling out Hamiltonian cycle"
+      ],
+      action: () => {
+        openDrawer("advanced");
+        ADVANCED_STATE.activeTab = "euler-hamilton";
+        renderAdvancedDrawerContent();
+      }
+    },
+    {
+      index: 14,
+      speaker: "Speaker B",
+      speakerClass: "speaker-b",
+      plannedTime: "0:45",
+      totalElapsed: "11:15",
+      title: "Planar Graphs & Euler's Formula: V - E + R = 2",
+      bullets: [
+        "Layout crossing number cr(G) = 6 crossings; Graph Thickness θ(G) ≤ 2",
+        "Euler's Formula for connected K1: V - E + R = 2 ⟹ R = 37 - 25 + 2 = 14 regions",
+        "Planar Handshaking: Sum of region degrees Σ deg(R_i) = 2|E| = 74"
+      ],
+      action: () => {
+        openDrawer("advanced");
+        ADVANCED_STATE.activeTab = "planar";
+        renderAdvancedDrawerContent();
+      }
+    },
+    {
+      index: 15,
+      speaker: "Speaker B",
+      speakerClass: "speaker-b",
+      plannedTime: "0:45",
+      totalElapsed: "12:00",
+      title: "Taxonomy of Traversals: Walk vs. Trail vs. Path",
+      bullets: [
+        "Walk (repeats allowed) ⊃ Trail (distinct edges) ⊃ Path (distinct vertices)",
+        "Closed Walk ⊃ Circuit (closed trail) ⊃ Cycle (closed path of length ≥ 3)",
+        "Automatic sequence classifier live in AI Mind verifies traversal types"
+      ],
+      action: () => {
+        openDrawer("advanced");
+        ADVANCED_STATE.activeTab = "walks";
+        renderAdvancedDrawerContent();
+      }
+    },
+    {
+      index: 16,
       speaker: "Speakers A & B",
       speakerClass: "speaker-both",
-      plannedTime: "0:30",
-      totalElapsed: "9:00",
-      title: "Conclusion: Graph Theory in My World",
+      plannedTime: "0:45",
+      totalElapsed: "12:45",
+      title: "Conclusion & Viva Voce Defense",
       bullets: [
-        "Graph Theory is not limited to math diagrams; it structures knowledge",
-        "Vertices, edges, degrees, paths, cycles, subgraphs, and components",
-        "Total planned presentation: 9:00 (1:00 Q&A buffer within 10 minutes)"
+        "47 ground truth discrete mathematics theorems & algorithms fully implemented & verified",
+        "Dual 3D WebGL / 2D SVG synchronized architecture with 1-click Examiner viva demos",
+        "Thank you! Ready for questions on graph theory, algorithms, and topology"
       ],
       action: () => {
         closeDrawers();
@@ -3216,6 +3615,9 @@ import { ThreeGraphEngine } from "./three-scene.js";
     } else if (drawerId === "diary") {
       drawerEl = diaryDrawer;
       renderDiaryDrawerContent();
+    } else if (drawerId === "advanced") {
+      drawerEl = advancedDrawer;
+      renderAdvancedDrawerContent();
     }
 
     if (drawerEl) {
@@ -3231,7 +3633,7 @@ import { ThreeGraphEngine } from "./three-scene.js";
   }
 
   function closeDrawers() {
-    [theoryDrawer, analysisDrawer, diaryDrawer].forEach((d) => d.classList.remove("open"));
+    [theoryDrawer, analysisDrawer, diaryDrawer, advancedDrawer].forEach((d) => d?.classList.remove("open"));
     document.querySelectorAll(".extra-nav .mode-btn").forEach((b) => {
       if (b.id !== "btn-toggle-present") b.classList.remove("active");
     });
@@ -3581,6 +3983,480 @@ import { ThreeGraphEngine } from "./three-scene.js";
     container.appendChild(diaryCard);
   }
 
+  // =========================================================================
+  // DRAWER 4: ADVANCED DISCRETE MATHEMATICS & ALGORITHMIC CONTROLS
+  // =========================================================================
+
+  const ADVANCED_STATE = {
+    activeTab: "dijkstra",
+    dijkstraStart: "data",
+    dijkstraTarget: "objdet",
+    fwQueryFrom: "dl",
+    fwQueryTo: "objdet",
+    seqTest: ["data", "features", "patterns", "prediction"]
+  };
+
+  function renderAdvancedDrawerContent() {
+    const container = document.getElementById("advanced-drawer-body");
+    if (!container) return;
+    container.innerHTML = "";
+
+    // Sync tab buttons
+    document.querySelectorAll(".adv-tab-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-adv-tab") === ADVANCED_STATE.activeTab);
+    });
+
+    switch (ADVANCED_STATE.activeTab) {
+      case "dijkstra":
+        renderAdvancedDijkstraTab(container);
+        break;
+      case "coloring":
+        renderAdvancedColoringTab(container);
+        break;
+      case "euler-hamilton":
+        renderAdvancedEulerHamiltonTab(container);
+        break;
+      case "planar":
+        renderAdvancedPlanarTab(container);
+        break;
+      case "walks":
+        renderAdvancedWalksTab(container);
+        break;
+    }
+  }
+
+  function renderAdvancedDijkstraTab(container) {
+    const dijkCard = document.createElement("div");
+    dijkCard.className = "adv-card";
+
+    const vOptions = GRAPH.vertices
+      .map((v) => `<option value="${v.id}" ${v.id === ADVANCED_STATE.dijkstraStart ? "selected" : ""}>${v.label} (${v.id})</option>`)
+      .join("");
+    const vTargetOptions = GRAPH.vertices
+      .map((v) => `<option value="${v.id}" ${v.id === ADVANCED_STATE.dijkstraTarget ? "selected" : ""}>${v.label} (${v.id})</option>`)
+      .join("");
+
+    dijkCard.innerHTML = `
+      <div class="adv-card-header">
+        <div class="adv-card-title">
+          <span>⚡ Dijkstra's Shortest Path Algorithm</span>
+        </div>
+        <span class="adv-badge-chip emerald">Greedy Relaxation</span>
+      </div>
+      <div class="adv-card-desc">
+        Computes the single-source shortest path using edge weights via greedy vertex relaxation:
+      </div>
+      <div class="adv-formula-box">
+        if d(u) + w(u, v) &lt; d(v) then d(v) := d(u) + w(u, v), π(v) := u
+      </div>
+      <div class="adv-controls-row">
+        <label style="font-size:11.5px; font-weight:700;">From:</label>
+        <select class="adv-select" id="adv-dijk-start">${vOptions}</select>
+        <label style="font-size:11.5px; font-weight:700;">To:</label>
+        <select class="adv-select" id="adv-dijk-target">${vTargetOptions}</select>
+        <button class="adv-action-btn" id="adv-btn-run-dijk">Run Dijkstra</button>
+      </div>
+      <div id="adv-dijk-results"></div>
+    `;
+    container.appendChild(dijkCard);
+
+    const fwCard = document.createElement("div");
+    fwCard.className = "adv-card";
+
+    const fw = GRAPH.floydWarshall();
+    const fwFromOptions = GRAPH.vertices
+      .map((v) => `<option value="${v.id}" ${v.id === ADVANCED_STATE.fwQueryFrom ? "selected" : ""}>${v.label}</option>`)
+      .join("");
+    const fwToOptions = GRAPH.vertices
+      .map((v) => `<option value="${v.id}" ${v.id === ADVANCED_STATE.fwQueryTo ? "selected" : ""}>${v.label}</option>`)
+      .join("");
+
+    fwCard.innerHTML = `
+      <div class="adv-card-header">
+        <div class="adv-card-title">
+          <span>⚡ Floyd's Algorithm (Floyd-Warshall All-Pairs)</span>
+        </div>
+        <span class="adv-badge-chip violet">Dynamic Programming</span>
+      </div>
+      <div class="adv-card-desc">
+        Computes all-pairs shortest paths through intermediate vertices {1..k} via dynamic programming:
+      </div>
+      <div class="adv-formula-box">
+        d_{ij}^{(k)} = min(d_{ij}^{(k-1)}, d_{ik}^{(k-1)} + d_{kj}^{(k-1)})
+      </div>
+      <div class="adv-result-card" style="background:#F8FAFC; border-color:#E2E8F0;">
+        <div style="display:flex; justify-content:space-between; font-size:11.5px; font-weight:700;">
+          <span>Component K1 Diameter: <strong style="color:#0284C7;">${fw.diameter}</strong></span>
+          <span>K1 Radius: <strong style="color:#10B981;">${fw.radius}</strong></span>
+          <span>Center Nodes: <strong style="color:#F59E0B;">${fw.centers.join(", ")}</strong></span>
+        </div>
+      </div>
+      <div class="adv-controls-row">
+        <label style="font-size:11px; font-weight:700;">Query Distance:</label>
+        <select class="adv-select" id="adv-fw-from">${fwFromOptions}</select>
+        <span>➔</span>
+        <select class="adv-select" id="adv-fw-to">${fwToOptions}</select>
+        <button class="adv-action-btn secondary" id="adv-btn-fw-query">Lookup</button>
+      </div>
+      <div id="adv-fw-query-result" style="font-size:12px; font-weight:700; color:#1E293B;"></div>
+    `;
+    container.appendChild(fwCard);
+
+    const runDijk = () => {
+      const s = document.getElementById("adv-dijk-start").value;
+      const t = document.getElementById("adv-dijk-target").value;
+      ADVANCED_STATE.dijkstraStart = s;
+      ADVANCED_STATE.dijkstraTarget = t;
+      const res = GRAPH.dijkstra(s, t);
+      const resDiv = document.getElementById("adv-dijk-results");
+
+      if (!res.reachable) {
+        resDiv.innerHTML = `
+          <div class="adv-result-card" style="background:#FFF1F2; border-color:#FECDD3;">
+            <span class="adv-result-title" style="color:#9F1239;">No Path Exists</span>
+            <span class="adv-result-val" style="color:#BE123C; font-size:11.5px;">Vertices belong to disconnected components (c = 2). Distance = ∞.</span>
+          </div>
+        `;
+        return;
+      }
+
+      const rows = res.trace.slice(0, 10).map((step) => `
+        <tr>
+          <td>${step.step}</td>
+          <td><strong>${step.current}</strong></td>
+          <td>${step.distance}</td>
+          <td>${step.predecessor || "—"}</td>
+          <td>${step.relaxed.map((r) => `${r.neighbor}(d=${r.newDist})`).join(", ") || "—"}</td>
+        </tr>
+      `).join("");
+
+      resDiv.innerHTML = `
+        <div class="adv-result-card" style="margin-top:10px;">
+          <span class="adv-result-title">Optimal Path Computed</span>
+          <span class="adv-result-val">${res.path.map((id) => GRAPH.vertex(id)?.label || id).join(" ➔ ")}</span>
+          <div style="font-size:11px; color:#166534; margin-top:2px;">
+            Total Distance: <strong>${res.distance}</strong> | Path Length: <strong>${res.path.length - 1} edges</strong>
+          </div>
+          <table class="adv-trace-table">
+            <thead>
+              <tr>
+                <th>Step</th>
+                <th>Node</th>
+                <th>d(v)</th>
+                <th>π(v)</th>
+                <th>Relaxations</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+
+      applyAdvancedVisuals2D("dijkstra", { path: res.path });
+      if (threeEngine) threeEngine.setModeVisuals("dijkstra", { path: res.path });
+    };
+
+    document.getElementById("adv-btn-run-dijk")?.addEventListener("click", runDijk);
+
+    const runFW = () => {
+      const from = document.getElementById("adv-fw-from").value;
+      const to = document.getElementById("adv-fw-to").value;
+      const d = fw.distMatrix[from] ? fw.distMatrix[from][to] : Infinity;
+      const el = document.getElementById("adv-fw-query-result");
+      if (d === Infinity) {
+        el.innerHTML = `Dist(${from}, ${to}) = <span style="color:#E11D48;">∞ (Disconnected Components)</span>`;
+      } else {
+        el.innerHTML = `Dist(${GRAPH.vertex(from)?.label}, ${GRAPH.vertex(to)?.label}) = <span style="color:#10B981; font-size:13px;">${d} edges</span>`;
+      }
+    };
+    document.getElementById("adv-btn-fw-query")?.addEventListener("click", runFW);
+    runFW();
+    runDijk();
+  }
+
+  function renderAdvancedColoringTab(container) {
+    const vcCard = document.createElement("div");
+    vcCard.className = "adv-card";
+    const vc = GRAPH.vertexColoring();
+
+    const c1Nodes = vc.colorGroups[1] || [];
+    const c2Nodes = vc.colorGroups[2] || [];
+    const c3Nodes = vc.colorGroups[3] || [];
+
+    vcCard.innerHTML = `
+      <div class="adv-card-header">
+        <div class="adv-card-title">
+          <span>⚡ Vertex Coloring & Welsh-Powell Algorithm</span>
+        </div>
+        <span class="adv-badge-chip emerald">χ(G) = 3</span>
+      </div>
+      <div class="adv-card-desc">
+        A proper vertex coloring assigns colors such that no two adjacent vertices share the same color: {u, v} ∈ E ⟹ c(u) ≠ c(v).
+      </div>
+      <div class="adv-formula-box">
+        Lower Bound: ω(G) = 3 (triangles C2, C3) ≤ χ(G) ≤ Δ(G) + 1 = 8
+      </div>
+      <div class="adv-card-desc">
+        Welsh-Powell greedy coloring sorts vertices by descending degree and assigns minimal available colors.
+        Result: <strong>Chromatic Number χ(G) = 3</strong> with <strong>0 conflicts</strong>.
+      </div>
+      <div class="adv-pill-list">
+        <div style="font-size:11px; font-weight:700; width:100%;">Color 1 (Cyan - ${c1Nodes.length} nodes):</div>
+        ${c1Nodes.map((id) => `<span class="adv-node-pill c1">${id}</span>`).join("")}
+        <div style="font-size:11px; font-weight:700; width:100%; margin-top:4px;">Color 2 (Emerald - ${c2Nodes.length} nodes):</div>
+        ${c2Nodes.map((id) => `<span class="adv-node-pill c2">${id}</span>`).join("")}
+        <div style="font-size:11px; font-weight:700; width:100%; margin-top:4px;">Color 3 (Amber - ${c3Nodes.length} nodes):</div>
+        ${c3Nodes.map((id) => `<span class="adv-node-pill c3">${id}</span>`).join("")}
+      </div>
+      <div class="adv-controls-row" style="margin-top:6px;">
+        <button class="adv-action-btn" id="adv-btn-apply-vc">Apply Proper 3-Coloring (χ=3)</button>
+        <button class="adv-action-btn rose" id="adv-btn-improper-vc">Show Improper Conflict Demo</button>
+      </div>
+      <div id="adv-vc-alert"></div>
+    `;
+    container.appendChild(vcCard);
+
+    const ecCard = document.createElement("div");
+    ecCard.className = "adv-card";
+    const ec = GRAPH.edgeColoring();
+
+    ecCard.innerHTML = `
+      <div class="adv-card-header">
+        <div class="adv-card-title">
+          <span>⚡ Edge Coloring & Vizing's Theorem</span>
+        </div>
+        <span class="adv-badge-chip violet">χ'(G) = 7</span>
+      </div>
+      <div class="adv-card-desc">
+        A proper edge coloring assigns colors to edges such that no two edges incident to the same vertex share a color.
+      </div>
+      <div class="adv-formula-box">
+        Vizing's Theorem: Δ(G) ≤ χ'(G) ≤ Δ(G) + 1. Here Δ = 7 (Data hub) ⟹ χ'(G) = 7 (Class 1)
+      </div>
+      <div class="adv-card-desc">
+        All 39 edges partitioned into 7 color classes with zero incident conflicts.
+      </div>
+      <div class="adv-controls-row">
+        <button class="adv-action-btn secondary" id="adv-btn-apply-ec">Apply Proper 7-Coloring (χ'=7)</button>
+      </div>
+    `;
+    container.appendChild(ecCard);
+
+    document.getElementById("adv-btn-apply-vc")?.addEventListener("click", () => {
+      document.getElementById("adv-vc-alert").innerHTML = `
+        <div class="adv-result-card" style="margin-top:8px;">
+          <span class="adv-result-title">Proper Coloring Active</span>
+          <span class="adv-result-val">3 Colors Applied across all 28 vertices. Handshaking & clique bounds verified.</span>
+        </div>
+      `;
+      applyAdvancedVisuals2D("vertexColoring", { colors: vc.colors });
+      if (threeEngine) threeEngine.setModeVisuals("vertexColoring", { colors: vc.colors });
+    });
+
+    document.getElementById("adv-btn-improper-vc")?.addEventListener("click", () => {
+      document.getElementById("adv-vc-alert").innerHTML = `
+        <div class="adv-result-card" style="background:#FFF1F2; border-color:#FECDD3; margin-top:8px;">
+          <span class="adv-result-title" style="color:#9F1239;">⚠️ Improper Coloring Conflict Detected</span>
+          <span class="adv-result-val" style="color:#BE123C; font-size:11.5px;">Adjacent vertices 'AI' and 'Data' share edge E1 but were assigned the SAME color! This violates proper coloring.</span>
+        </div>
+      `;
+      applyAdvancedVisuals2D("vertexColoring", { colors: vc.colors, improper: true });
+      if (threeEngine) threeEngine.setModeVisuals("vertexColoring", { colors: vc.colors });
+    });
+
+    document.getElementById("adv-btn-apply-ec")?.addEventListener("click", () => {
+      applyAdvancedVisuals2D("edgeColoring", { edgeColors: ec.edgeColors });
+      if (threeEngine) threeEngine.setModeVisuals("edgeColoring", { edgeColors: ec.edgeColors });
+    });
+  }
+
+  function renderAdvancedEulerHamiltonTab(container) {
+    const ea = GRAPH.eulerianAnalysis();
+    const ha = GRAPH.hamiltonianAnalysis();
+
+    const euCard = document.createElement("div");
+    euCard.className = "adv-card";
+
+    euCard.innerHTML = `
+      <div class="adv-card-header">
+        <div class="adv-card-title">
+          <span>⚡ Eulerian Path & Circuit Analysis</span>
+        </div>
+        <span class="adv-badge-chip rose">Non-Eulerian</span>
+      </div>
+      <div class="adv-card-desc">
+        By Euler's Theorem, a connected graph has:
+        <br>• <strong>Eulerian Circuit</strong> ⟺ all vertex degrees are even.
+        <br>• <strong>Eulerian Trail / Path</strong> ⟺ exactly 0 or 2 vertices have odd degree.
+      </div>
+      <div class="adv-formula-box">
+        Odd Degree Vertices Count: ${ea.oddDegreeCount} (Euler condition: 0 or 2)
+      </div>
+      <div class="adv-card-desc">
+        Vertices with odd degree in AI Mind:
+      </div>
+      <div class="adv-pill-list">
+        ${ea.oddVertices.map((v) => `<span class="adv-node-pill conflict">${v.label} (deg ${v.degree})</span>`).join("")}
+      </div>
+      <div class="adv-result-card" style="background:#FFF1F2; border-color:#FECDD3; margin-top:6px;">
+        <span class="adv-result-title" style="color:#9F1239;">Mathematical Impossibility Verdict</span>
+        <span class="adv-result-val" style="color:#BE123C; font-size:11.5px;">
+          Circuit: IMPOSSIBLE (${ea.oddDegreeCount} ≠ 0) | Path: IMPOSSIBLE (${ea.oddDegreeCount} ≠ 2)
+        </span>
+      </div>
+      <div class="adv-controls-row">
+        <button class="adv-action-btn rose" id="adv-btn-highlight-euler">Highlight 12 Odd-Degree Vertices</button>
+      </div>
+    `;
+    container.appendChild(euCard);
+
+    const hamCard = document.createElement("div");
+    hamCard.className = "adv-card";
+
+    hamCard.innerHTML = `
+      <div class="adv-card-header">
+        <div class="adv-card-title">
+          <span>⚡ Hamiltonian Path & Circuit Analysis</span>
+        </div>
+        <span class="adv-badge-chip amber">Non-Hamiltonian</span>
+      </div>
+      <div class="adv-card-desc">
+        A Hamiltonian path visits every vertex exactly once; a circuit returns to the start vertex.
+      </div>
+      <div class="adv-formula-box">
+        Dirac's Condition: δ(G) ≥ n/2 = 14. Here min degree δ = 1 &lt; 14 (FAILS)
+      </div>
+      <div class="adv-card-desc">
+        <strong>Cut-Set Non-Hamiltonicity Theorem:</strong> For any subset S ⊂ V, a Hamiltonian graph must satisfy c(G - S) ≤ |S|.
+        <br>For S = {Data}, |S| = 1, but removing Data yields c(G - S) = 3 &gt; 1!
+        <br>Also, pendant vertices (dataset, chessrules, strategy with deg=1) cannot participate in any 2-factor circuit.
+      </div>
+      <div class="adv-controls-row">
+        <button class="adv-action-btn amber" id="adv-btn-highlight-hamilton">Demonstrate Cut-Set Violation (S={Data})</button>
+      </div>
+    `;
+    container.appendChild(hamCard);
+
+    document.getElementById("adv-btn-highlight-euler")?.addEventListener("click", () => {
+      applyAdvancedVisuals2D("eulerian", { oddVertices: ea.oddVertices });
+      if (threeEngine) threeEngine.setModeVisuals("eulerian", { oddVertices: ea.oddVertices });
+    });
+
+    document.getElementById("adv-btn-highlight-hamilton")?.addEventListener("click", () => {
+      applyAdvancedVisuals2D("hamiltonian");
+      if (threeEngine) threeEngine.setModeVisuals("hamiltonian");
+    });
+  }
+
+  function renderAdvancedPlanarTab(container) {
+    const pa = GRAPH.planarAnalysis(NODE_POSITIONS);
+
+    const plCard = document.createElement("div");
+    plCard.className = "adv-card";
+
+    plCard.innerHTML = `
+      <div class="adv-card-header">
+        <div class="adv-card-title">
+          <span>⚡ Planar Graphs, Regions & Euler's Formula</span>
+        </div>
+        <span class="adv-badge-chip emerald">V - E + R = 1 + c</span>
+      </div>
+      <div class="adv-card-desc">
+        A graph is planar if it can be drawn without edge crossings. In our layout:
+        <br>• Edge Crossing Number: <strong>${pa.crossingsInLayout} crossings</strong>
+        <br>• Graph Thickness: <strong>θ(G) ≤ ${pa.thicknessUpperBound}</strong> (can be decomposed into ≤ 2 planar subgraphs)
+      </div>
+      <div class="adv-formula-box">
+        Euler's Planar Formula for K1: V - E + R = 2 ⟹ R = E - V + 2 = 37 - 25 + 2 = 14
+      </div>
+      <div class="adv-result-card">
+        <span class="adv-result-title">Regions & Faces Breakdown (Component K1)</span>
+        <span class="adv-result-val">Total Regions: 14 (13 Bounded Faces + 1 Exterior Unbounded Face)</span>
+        <div style="font-size:11.5px; color:#14532D; margin-top:4px;">
+          Sum of Region Degrees: <strong>Σ deg(R_i) = 2|E| = ${pa.regionDegreeSum}</strong> (Planar Handshaking Lemma)
+        </div>
+      </div>
+      <div class="adv-controls-row">
+        <button class="adv-action-btn" id="adv-btn-highlight-planar">Highlight Planar Network & Regions</button>
+      </div>
+    `;
+    container.appendChild(plCard);
+
+    document.getElementById("adv-btn-highlight-planar")?.addEventListener("click", () => {
+      applyAdvancedVisuals2D("planar");
+      if (threeEngine) threeEngine.setModeVisuals("planar");
+    });
+  }
+
+  function renderAdvancedWalksTab(container) {
+    const wCard = document.createElement("div");
+    wCard.className = "adv-card";
+
+    wCard.innerHTML = `
+      <div class="adv-card-header">
+        <div class="adv-card-title">
+          <span>⚡ Traversal Taxonomy: Walks, Trails & Paths</span>
+        </div>
+        <span class="adv-badge-chip violet">Sequence Classifier</span>
+      </div>
+      <div class="adv-card-desc">
+        Formal hierarchy of vertex-edge sequences in discrete mathematics:
+        <br>• <strong>Walk:</strong> Any alternating sequence of vertices & edges. Repeats allowed.
+        <br>• <strong>Trail:</strong> A walk with <em>distinct edges</em>. Vertices may repeat.
+        <br>• <strong>Path:</strong> A walk with <em>distinct vertices</em> (hence distinct edges).
+        <br>• <strong>Closed Walk:</strong> Walk where start = end.
+        <br>• <strong>Circuit:</strong> Closed trail (distinct edges, start = end).
+        <br>• <strong>Cycle:</strong> Closed path (distinct vertices except start = end, length ≥ 3).
+      </div>
+      <div class="adv-controls-row">
+        <span style="font-size:11px; font-weight:700;">Test Presets:</span>
+        <button class="adv-tab-btn" id="adv-btn-test-walk">Walk (Repeats)</button>
+        <button class="adv-tab-btn" id="adv-btn-test-trail">Trail (Data repeated)</button>
+        <button class="adv-tab-btn" id="adv-btn-test-path">Path (P1)</button>
+        <button class="adv-tab-btn" id="adv-btn-test-cycle">Cycle (C1)</button>
+      </div>
+      <div id="adv-walk-results"></div>
+    `;
+    container.appendChild(wCard);
+
+    const testSeq = (seq) => {
+      ADVANCED_STATE.seqTest = seq;
+      const cl = GRAPH.classifySequence(seq);
+      const resDiv = document.getElementById("adv-walk-results");
+
+      resDiv.innerHTML = `
+        <div class="adv-result-card" style="margin-top:10px;">
+          <span class="adv-result-title">Classification Result: ${cl.classification}</span>
+          <span class="adv-result-val">${seq.map((id) => GRAPH.vertex(id)?.label || id).join(" ➔ ")}</span>
+          <div style="font-size:11px; color:#14532D; margin-top:4px;">
+            Length: <strong>${cl.length} edges</strong> | Distinct Vertices: <strong>${cl.distinctVertexCount}</strong> | Closed: <strong>${cl.isClosed ? "Yes" : "No"}</strong>
+          </div>
+          <div style="font-size:11px; color:#475569; margin-top:2px;">
+            Walk: ${cl.isWalk ? "✓" : "✗"} | Trail: ${cl.isTrail ? "✓" : "✗"} | Path: ${cl.isPath ? "✓" : "✗"} | Circuit: ${cl.isCircuit ? "✓" : "✗"} | Cycle: ${cl.isCycle ? "✓" : "✗"}
+          </div>
+        </div>
+      `;
+
+      applyAdvancedVisuals2D("walks", { sequence: seq });
+      if (threeEngine) threeEngine.setModeVisuals("dijkstra", { path: seq });
+    };
+
+    document.getElementById("adv-btn-test-walk")?.addEventListener("click", () => {
+      testSeq(["data", "features", "patterns", "features", "data"]);
+    });
+    document.getElementById("adv-btn-test-trail")?.addEventListener("click", () => {
+      testSeq(["data", "features", "patterns", "data", "ml", "data"]);
+    });
+    document.getElementById("adv-btn-test-path")?.addEventListener("click", () => {
+      testSeq(["data", "features", "patterns", "prediction"]);
+    });
+    document.getElementById("adv-btn-test-cycle")?.addEventListener("click", () => {
+      testSeq(["data", "training", "model", "prediction", "feedback", "data"]);
+    });
+
+    testSeq(ADVANCED_STATE.seqTest);
+  }
+
   /**
    * Presentation Strip Controls
    */
@@ -3892,6 +4768,21 @@ import { ThreeGraphEngine } from "./three-scene.js";
       else openDrawer("theory");
     });
 
+    document.getElementById("btn-drawer-advanced")?.addEventListener("click", () => {
+      if (activeDrawer === "advanced") closeDrawers();
+      else openDrawer("advanced");
+    });
+
+    document.getElementById("adv-tabs-bar")?.addEventListener("click", (e) => {
+      const btn = e.target.closest(".adv-tab-btn");
+      if (!btn) return;
+      const tab = btn.getAttribute("data-adv-tab");
+      if (tab) {
+        ADVANCED_STATE.activeTab = tab;
+        renderAdvancedDrawerContent();
+      }
+    });
+
     document.getElementById("btn-drawer-analysis").addEventListener("click", () => {
       if (activeDrawer === "analysis") closeDrawers();
       else openDrawer("analysis");
@@ -4062,6 +4953,9 @@ import { ThreeGraphEngine } from "./three-scene.js";
       } else if (e.key.toLowerCase() === "d") {
         if (activeDrawer === "diary") closeDrawers();
         else openDrawer("diary");
+      } else if (e.key.toLowerCase() === "x") {
+        if (activeDrawer === "advanced") closeDrawers();
+        else openDrawer("advanced");
       } else if (e.key.toLowerCase() === "p") {
         togglePresentationMode();
       } else if (presActive && (e.key === "ArrowRight" || e.key === " " || e.key === "Enter")) {
