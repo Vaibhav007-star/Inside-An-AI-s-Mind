@@ -2273,6 +2273,8 @@ import { ThreeGraphEngine } from "./three-scene.js";
         break;
       }
     }
+  }
+
   /**
    * Synchronize 2D SVG graph visuals with advanced discrete math modes
    */
